@@ -1,0 +1,41 @@
+{
+  "name": "resume-static-website-cdk",
+  "version": "1.0.0",
+  "description": "AWS CDK infrastructure for hosting a resume as a static website",
+  "bin": {
+    "resume-static-website-cdk": "bin/resume-stack.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "npm run build && cdk deploy",
+    "destroy": "cdk destroy",
+    "synth": "cdk synth",
+    "diff": "cdk diff"
+  },
+  "keywords": [
+    "cdk",
+    "aws",
+    "resume",
+    "static-website",
+    "cloudfront",
+    "s3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "~5.0.0",
+    "aws-cdk": "^2.100.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21"
+  }
+}
