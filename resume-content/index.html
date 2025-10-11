@@ -24,9 +24,16 @@
                 <span>0173-5475039</span>
             </div>
             <div class="logout-container">
+                <span id="userInfo" style="margin-right: 15px; color: #667eea; font-weight: 600;"></span>
                 <a href="logout.html" class="logout-btn" title="Abmelden / Logout">🔓 Logout</a>
             </div>
         </header>
+
+        <script>
+            // Display logged in user
+            const user = sessionStorage.getItem('resumeUser') || 'User';
+            document.getElementById('userInfo').textContent = '👤 ' + user;
+        </script>
 
         <!-- PDF Download Section -->
         <div class="pdf-download-banner">

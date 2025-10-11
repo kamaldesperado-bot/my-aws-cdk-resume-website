@@ -197,6 +197,86 @@
             font-size: 12px;
         }
 
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            color: #999;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .btn-guest {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-guest:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(240, 147, 251, 0.4);
+        }
+
+        .guest-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #0066cc;
+            border-left: 4px solid #0066cc;
+            display: none;
+        }
+
+        .guest-info.show {
+            display: block;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .guest-info strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .password-display {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+            word-break: break-all;
+            border: 2px dashed #0066cc;
+        }
+
         @media (max-width: 480px) {
             .login-container {
                 padding: 40px 30px;
@@ -253,6 +333,14 @@
         <div id="loading" class="loading">
             <span class="spinner"></span>Authentifizierung läuft...
         </div>
+
+        <div class="divider">ODER / OR</div>
+
+        <button type="button" class="btn-guest" id="guestBtn">
+            🎫 Gast-Zugang anfordern / Request Guest Access
+        </button>
+
+        <!-- Guest password display removed as requested -->
         
         <p class="footer-text">
             🔒 Sichere Verbindung über HTTPS<br>
@@ -260,6 +348,7 @@
         </p>
     </div>
 
+    <script src="guest-passwords.js"></script>
     <script>
         // Check if already authenticated
         if (sessionStorage.getItem('resumeAuth') === 'true') {
@@ -270,11 +359,65 @@
         const errorMessage = document.getElementById('errorMessage');
         const loading = document.getElementById('loading');
         const loginBtn = document.getElementById('loginBtn');
+        const guestBtn = document.getElementById('guestBtn');
+        const guestInfo = document.getElementById('guestInfo');
+        const generatedPassword = document.getElementById('generatedPassword');
+        const remainingCount = document.getElementById('remainingCount');
+        
+        // Check if guest access was already used in this browser
+        if (sessionStorage.getItem('guestAccessUsed') === 'true') {
+            guestBtn.disabled = true;
+            guestBtn.textContent = '✅ Gast-Zugang bereits verwendet / Guest access already used';
+            guestBtn.style.opacity = '0.5';
+            guestBtn.style.cursor = 'not-allowed';
+        }
+        
+        // Guest Access Button Handler
+        guestBtn.addEventListener('click', function() {
+            const remaining = getRemainingPasswordCount();
+            
+            if (remaining === 0) {
+                errorMessage.textContent = '❌ Keine Gast-Passwörter mehr verfügbar / No guest passwords available';
+                errorMessage.classList.add('show');
+                return;
+            }
+            
+            // Get a random unused password
+            const usedPasswords = JSON.parse(localStorage.getItem('usedGuestPasswords') || '[]');
+            const availablePasswords = GUEST_PASSWORDS.filter(pwd => !usedPasswords.includes(pwd));
+            
+            if (availablePasswords.length === 0) {
+                errorMessage.textContent = '❌ Keine Gast-Passwörter mehr verfügbar / No guest passwords available';
+                errorMessage.classList.add('show');
+                return;
+            }
+            
+            const randomPassword = availablePasswords[Math.floor(Math.random() * availablePasswords.length)];
+            
+            // Pre-fill the form and auto-submit
+            document.getElementById('username').value = 'GUEST';
+            document.getElementById('password').value = randomPassword;
+            
+            // Mark guest access as used in this browser session
+            sessionStorage.setItem('guestAccessUsed', 'true');
+            
+            // Hide error if any
+            errorMessage.classList.remove('show');
+            
+            // Disable guest button to prevent multiple requests
+            guestBtn.disabled = true;
+            guestBtn.textContent = '⏳ Anmeldung läuft... / Logging in...';
+            
+            // Auto-submit the form
+            setTimeout(() => {
+                loginForm.dispatchEvent(new Event('submit'));
+            }, 500);
+        });
         
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
             // Hide error message
@@ -285,27 +428,50 @@
             loginBtn.disabled = true;
             
             // Simple password check (NOT SECURE - client-side only!)
-            // This is for casual protection only, tech-savvy users can bypass this
             setTimeout(() => {
                 loading.classList.remove('show');
                 loginBtn.disabled = false;
                 
+                let isValid = false;
+                let errorMsg = '❌ Ungültige Anmeldedaten / Invalid credentials';
+                
+                // Check regular user
                 if (username === 'kamal' && password === 'Resume2024!') {
+                    isValid = true;
+                }
+                // Check guest user
+                else if (username.toUpperCase() === 'GUEST') {
+                    const guestValidation = validateGuestPassword(password);
+                    
+                    if (guestValidation.valid) {
+                        isValid = true;
+                    } else if (guestValidation.reason === 'already_used') {
+                        errorMsg = '❌ Dieses Gast-Passwort wurde bereits verwendet / This guest password has already been used';
+                    } else {
+                        errorMsg = '❌ Ungültiges Gast-Passwort / Invalid guest password';
+                    }
+                }
+                
+                if (isValid) {
                     // Store authentication in session
                     sessionStorage.setItem('resumeAuth', 'true');
+                    sessionStorage.setItem('resumeUser', username.toUpperCase());
                     
                     // Redirect to resume
                     window.location.href = 'index.html';
                 } else {
                     // Show error
-                    errorMessage.textContent = '❌ Ungültige Anmeldedaten / Invalid credentials';
+                    errorMessage.textContent = errorMsg;
                     errorMessage.classList.add('show');
                     
                     // Clear password field
                     document.getElementById('password').value = '';
                     document.getElementById('password').focus();
+                    
+                    // Hide guest info if shown
+                    guestInfo.classList.remove('show');
                 }
-            }, 500); // Small delay to show loading state
+            }, 500);
         });
         
         // Check if we came here from an auth failure
@@ -314,6 +480,14 @@
             errorMessage.textContent = '⚠️ Bitte melden Sie sich an / Please log in';
             errorMessage.classList.add('show');
         }
+        
+        // Update remaining count on load
+        window.addEventListener('load', function() {
+            const remaining = getRemainingPasswordCount();
+            if (remaining < 10) {
+                guestBtn.innerHTML = `🎫 Gast-Zugang (${remaining} verfügbar / ${remaining} available)`;
+            }
+        });
     </script>
 </body>
 </html>
