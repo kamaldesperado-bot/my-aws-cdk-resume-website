@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Album</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        // Check authentication (NOT SECURE - client-side only!)
+        if (sessionStorage.getItem('photoAlbumAuth') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📸 Photo Album</h1>
+            <div class="header-controls">
+                <span id="userInfo" class="user-info"></span>
+                <a href="logout.html" class="btn-logout">🔓 Logout</a>
+            </div>
+        </header>
+
+        <!-- Album Selection & Upload Section -->
+        <div class="controls-section">
+            <div class="album-controls">
+                <select id="albumSelect" class="album-select">
+                    <option value="">-- Wählen Sie ein Album / Select Album --</option>
+                </select>
+                <button id="newAlbumBtn" class="btn-new-album">+ Neues Album / New Album</button>
+            </div>
+
+            <div id="uploadSection" class="upload-section" style="display: none;">
+                <h2>Fotos hochladen / Upload Photos</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p><strong>Klicken Sie oder ziehen Sie Fotos hierher</strong></p>
+                    <p><small>Click or drag photos here</small></p>
+                    <p><small>Mehrere Dateien werden unterstützt / Multiple files supported</small></p>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                </div>
+                
+                <div id="uploadProgress" class="upload-progress" style="display: none;">
+                    <h3>Hochladen... / Uploading...</h3>
+                    <div id="progressList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo Gallery -->
+        <div id="gallerySection" class="gallery-section" style="display: none;">
+            <div class="gallery-header">
+                <h2 id="albumTitle"></h2>
+                <div class="gallery-stats">
+                    <span id="photoCount">0 Fotos</span>
+                </div>
+            </div>
+            <div id="photoGrid" class="photo-grid"></div>
+        </div>
+
+        <!-- New Album Modal -->
+        <div id="newAlbumModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Neues Album erstellen / Create New Album</h2>
+                <input type="text" id="newAlbumName" placeholder="Album-Name / Album Name" class="input-album-name">
+                <button id="createAlbumBtn" class="btn-create">Erstellen / Create</button>
+            </div>
+        </div>
+
+        <!-- Photo Lightbox -->
+        <div id="lightbox" class="lightbox">
+            <span class="close-lightbox">&times;</span>
+            <img id="lightboxImg" src="" alt="">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    <!-- Cloudinary Upload Widget Script -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    
+    <script src="app.js"></script>
+    
+    <script>
+        // Display logged in user
+        const user = sessionStorage.getItem('photoAlbumUser') || 'User';
+        document.getElementById('userInfo').textContent = '👤 ' + user;
+    </script>
+</body>
+</html>
