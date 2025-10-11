@@ -49,14 +49,39 @@ body {
     justify-content: center;
     flex-wrap: wrap;
     gap: 15px;
-    font-size: 0.95em;
-    color: #555;
+    margin-bottom: 15px;
 }
 
 .contact-info span {
-    padding: 5px 10px;
-    background: #f8f9fa;
-    border-radius: 5px;
+    color: #555;
+    font-size: 0.95em;
+}
+
+/* Logout Button */
+.logout-container {
+    margin-top: 15px;
+    text-align: right;
+}
+
+.logout-btn {
+    display: inline-block;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border: 2px solid #667eea;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.logout-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .contact-info a {

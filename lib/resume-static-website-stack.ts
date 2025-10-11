@@ -40,7 +40,7 @@ export class ResumeStaticWebsiteStack extends cdk.Stack {
       })
     );
 
-    // Create CloudFront distribution
+    // Create CloudFront distribution (no authentication - using client-side JavaScript instead)
     const distribution = new cloudfront.Distribution(this, 'ResumeDistribution', {
       defaultBehavior: {
         origin: new origins.S3Origin(resumeBucket, {
