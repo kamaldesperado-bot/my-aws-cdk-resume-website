@@ -33,6 +33,48 @@ const lightboxCaption = document.getElementById('lightboxCaption');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
+    // Album download button logic
+    const downloadBtn = document.getElementById('downloadAlbumBtn');
+    downloadBtn.addEventListener('click', async function() {
+        if (!currentAlbum || !currentAlbum.photos || currentAlbum.photos.length === 0) {
+            showNotification('No photos to download in this album.', 'warning');
+            return;
+        }
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '⬇️ Preparing...';
+        // Load JSZip dynamically if not present
+        if (typeof JSZip === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.body.appendChild(script);
+            await new Promise(resolve => { script.onload = resolve; });
+        }
+        const zip = new JSZip();
+        let count = 0;
+        for (const photo of currentAlbum.photos) {
+            try {
+                const response = await fetch(photo.url);
+                const blob = await response.blob();
+                zip.file(photo.name || `photo${++count}.jpg`, blob);
+            } catch (e) {
+                console.error('Error downloading photo:', photo.url, e);
+            }
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentAlbum.name || 'album'}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+            a.remove();
+        }, 2000);
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '⬇️ Download Album';
+        showNotification('✅ Album ZIP ready for download!', 'success');
+    });
     console.log('📱 Photo Album Loading with GitHub Gist Sync...');
     
     // Check if configured
@@ -503,38 +545,64 @@ function displayPhotos(photos) {
         `;
         return;
     }
-    
     photoGrid.innerHTML = '';
-    
-    photos.forEach(photo => {
+    photos.forEach((photo, idx) => {
         const item = document.createElement('div');
         item.className = 'photo-item';
-        
         // Use Cloudinary transformations for optimized thumbnails
         const thumbnailUrl = photo.url.replace('/upload/', '/upload/c_fill,w_400,h_400,q_auto,f_auto/');
-        
         item.innerHTML = `
             <img src="${thumbnailUrl}" alt="${photo.name}" loading="lazy">
             <div class="photo-item-overlay">
                 <div>${photo.name}</div>
                 <div><small>${new Date(photo.uploaded).toLocaleDateString('de-DE')}</small></div>
+                <button class="btn-delete-photo" title="Delete photo">🗑️</button>
             </div>
         `;
-        
-        item.addEventListener('click', function() {
-            showLightbox(photo);
+        // Delete button logic
+        item.querySelector('.btn-delete-photo').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (confirm('Are you sure you want to delete this photo?')) {
+                currentAlbum.photos.splice(idx, 1);
+                saveToGist();
+                renderAlbumList();
+                selectAlbum(albums.indexOf(currentAlbum));
+                showNotification('Photo deleted!', 'success');
+            }
         });
-        
+        // Lightbox logic
+        item.addEventListener('click', function() {
+            showLightbox(photo, idx);
+        });
         photoGrid.appendChild(item);
     });
 }
 
 // Show photo in lightbox
 function showLightbox(photo) {
+    showLightbox(photo, currentAlbum.photos.indexOf(photo));
+}
+// Enhanced lightbox with scroll
+function showLightbox(photo, idx) {
     const optimizedUrl = photo.url.replace('/upload/', '/upload/q_auto,f_auto/');
     lightboxImg.src = optimizedUrl;
     lightboxCaption.textContent = `${photo.name} - ${new Date(photo.uploaded).toLocaleDateString('de-DE')}`;
     lightbox.classList.add('show');
+    let currentIdx = idx;
+    // Remove previous listeners
+    document.onkeydown = null;
+    document.onkeydown = function(e) {
+        if (!lightbox.classList.contains('show')) return;
+        if (e.key === 'ArrowRight') {
+            currentIdx = (currentIdx + 1) % currentAlbum.photos.length;
+            showLightbox(currentAlbum.photos[currentIdx], currentIdx);
+        } else if (e.key === 'ArrowLeft') {
+            currentIdx = (currentIdx - 1 + currentAlbum.photos.length) % currentAlbum.photos.length;
+            showLightbox(currentAlbum.photos[currentIdx], currentIdx);
+        } else if (e.key === 'Escape') {
+            lightbox.classList.remove('show');
+        }
+    };
 }
 
 // Show notification to user
