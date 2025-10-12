@@ -5,10 +5,42 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
 export class PhotoAlbumStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Create DynamoDB table for album metadata (syncs across devices)
+    const albumsTable = new dynamodb.Table(this, 'PhotoAlbumsTable', {
+      tableName: 'photo-albums',
+      partitionKey: {
+        name: 'userId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'albumId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // No capacity planning needed
+      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep data safe!
+      pointInTimeRecovery: true, // Enable backups
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+    });
+
+    // Add GSI for querying albums by creation date
+    albumsTable.addGlobalSecondaryIndex({
+      indexName: 'UserCreatedIndex',
+      partitionKey: {
+        name: 'userId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'created',
+        type: dynamodb.AttributeType.STRING,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
 
     // Create S3 bucket for photo album website (just HTML/CSS/JS - photos on Cloudinary)
     const photoAlbumBucket = new s3.Bucket(this, 'PhotoAlbumBucket', {
@@ -96,6 +128,16 @@ export class PhotoAlbumStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'PhotoAlbumDistributionId', {
       value: distribution.distributionId,
       description: 'CloudFront distribution ID for cache invalidation',
+    });
+
+    new cdk.CfnOutput(this, 'PhotoAlbumsTableName', {
+      value: albumsTable.tableName,
+      description: 'DynamoDB table name for album metadata',
+    });
+
+    new cdk.CfnOutput(this, 'PhotoAlbumsTableArn', {
+      value: albumsTable.tableArn,
+      description: 'DynamoDB table ARN',
     });
   }
 }
