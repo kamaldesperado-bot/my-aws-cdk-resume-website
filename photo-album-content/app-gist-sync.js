@@ -355,6 +355,8 @@ function selectAlbum(index) {
     albumTitle.textContent = currentAlbum.name;
     photoCount.textContent = `${currentAlbum.photos.length} Fotos`;
     displayPhotos(currentAlbum.photos);
+        // Force save to Gist to ensure photo data is synced
+        saveToGist();
 }
 
 // Handle file uploads
