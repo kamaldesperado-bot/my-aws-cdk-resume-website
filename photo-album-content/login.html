@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Album - Login</title>
+    <script src="config.js"></script>
+    <script src="config.local.js"></script>
     <style>
         * {
             margin: 0;
@@ -235,8 +237,15 @@
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Anmelden / Login';
                 
-                // Default credentials (CHANGE THESE!)
-                if (username === 'photos' && password === 'Album2024!') {
+                // Debug: Check if config is loaded
+                console.log('CONFIG available:', typeof window.CONFIG !== 'undefined');
+                console.log('CONFIG values:', window.CONFIG);
+                console.log('Entered username:', username);
+                console.log('Expected username:', window.CONFIG?.USERNAME);
+                console.log('Match:', username === window.CONFIG?.USERNAME && password === window.CONFIG?.PASSWORD);
+                
+                // Check credentials from config
+                if (window.CONFIG && username === window.CONFIG.USERNAME && password === window.CONFIG.PASSWORD) {
                     // Store authentication in session
                     sessionStorage.setItem('photoAlbumAuth', 'true');
                     sessionStorage.setItem('photoAlbumUser', username);
@@ -245,6 +254,7 @@
                     window.location.href = 'index.html';
                 } else {
                     // Show error
+                    console.error('Login failed - credentials do not match');
                     errorMessage.textContent = '❌ Ungültige Anmeldedaten / Invalid credentials';
                     errorMessage.classList.add('show');
                     

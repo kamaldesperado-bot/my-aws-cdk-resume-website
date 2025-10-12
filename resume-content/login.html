@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Kamalakannan Sundaramurthy</title>
+    <script src="config.js"></script>
+    <script src="config.local.js"></script>
     <style>
         * {
             margin: 0;
@@ -432,12 +434,19 @@
                 loading.classList.remove('show');
                 loginBtn.disabled = false;
                 
+                // Debug logging
+                console.log('CONFIG available:', typeof window.CONFIG !== 'undefined');
+                console.log('CONFIG values:', window.CONFIG);
+                console.log('Entered username:', username);
+                console.log('Expected username:', window.CONFIG?.USERNAME);
+                
                 let isValid = false;
                 let errorMsg = '❌ Ungültige Anmeldedaten / Invalid credentials';
                 
-                // Check regular user
-                if (username === 'kamal' && password === 'Resume2024!') {
+                // Check regular user (from config)
+                if (window.CONFIG && username === window.CONFIG.USERNAME && password === window.CONFIG.PASSWORD) {
                     isValid = true;
+                    console.log('✅ Regular user login successful');
                 }
                 // Check guest user
                 else if (username.toUpperCase() === 'GUEST') {
@@ -445,6 +454,7 @@
                     
                     if (guestValidation.valid) {
                         isValid = true;
+                        console.log('✅ Guest user login successful');
                     } else if (guestValidation.reason === 'already_used') {
                         errorMsg = '❌ Dieses Gast-Passwort wurde bereits verwendet / This guest password has already been used';
                     } else {
