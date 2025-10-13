@@ -1,3 +1,4 @@
+!cloudfront-functions/basic-auth.js
 !resume-content/guest-passwords.js
 *.d.ts
 node_modules
