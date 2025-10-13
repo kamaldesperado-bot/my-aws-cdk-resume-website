@@ -1,7 +1,3 @@
-*.js
-!jest.config.js
-!**/config.js
-!photo-album-content/app-gist-sync.js
 !resume-content/guest-passwords.js
 *.d.ts
 node_modules
@@ -33,7 +29,6 @@ coverage/
 
 # Sensitive configuration files
 **/config.local.js
-photo-album-content/app.js
 
 # Environment variables
 .env
