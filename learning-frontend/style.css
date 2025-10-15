@@ -28,6 +28,19 @@ input[type="text"], input[type="password"] {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+textarea#chat-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1.15rem;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
 button {
   width: 100%;
   padding: 0.75rem;
