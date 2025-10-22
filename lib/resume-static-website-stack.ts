@@ -3,7 +3,7 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class ResumeStaticWebsiteStack extends cdk.Stack {
@@ -43,9 +43,7 @@ export class ResumeStaticWebsiteStack extends cdk.Stack {
     // Create CloudFront distribution (no authentication - using client-side JavaScript instead)
     const distribution = new cloudfront.Distribution(this, 'ResumeDistribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(resumeBucket, {
-          originAccessIdentity: originAccessIdentity,
-        }),
+        origin: S3BucketOrigin.withOriginAccessControl(resumeBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
