@@ -20,15 +20,20 @@ function selectAlbum(idx) {
     photoGrid.innerHTML = '';
     if (currentAlbum.photos && currentAlbum.photos.length > 0) {
         currentAlbum.photos.forEach((photo, photoIdx) => {
-            const container = document.createElement('div');
-            container.className = 'photo-thumb-container';
+            // Card container for each photo
+            const card = document.createElement('div');
+            card.className = 'photo-item';
+
+            // Thumbnail wrapper
+            const thumbWrapper = document.createElement('div');
+            thumbWrapper.className = 'photo-thumb-wrapper';
 
             const img = document.createElement('img');
             img.src = photo.url;
             img.alt = photo.name || '';
             img.className = 'photo-thumb';
-            img.style.maxWidth = '160px';
-            img.style.maxHeight = '160px';
+            img.style.width = '100%';
+            img.style.height = '100%';
             img.style.objectFit = 'cover';
             img.addEventListener('click', function () {
                 lightboxImg.src = photo.url;
@@ -37,27 +42,38 @@ function selectAlbum(idx) {
                 lightbox.classList.add('show');
             });
 
-            // Delete button
+            // Delete button inside thumbnail
             const delBtn = document.createElement('button');
             delBtn.textContent = '🗑️';
             delBtn.title = 'Delete photo';
             delBtn.className = 'delete-photo-btn';
-            delBtn.style.marginLeft = '4px';
-            delBtn.style.cursor = 'pointer';
             delBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 if (confirm('Delete this photo?')) {
                     currentAlbum.photos.splice(photoIdx, 1);
                     localStorage.setItem('photoAlbums', JSON.stringify(albums));
-                    saveToGist();
+                    if (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID) {
+                        saveToGist(window.CONFIG, showNotification, CURRENT_USER);
+                    }
                     selectAlbum(albums.indexOf(currentAlbum));
                     showNotification('Photo deleted.', 'success');
                 }
             });
 
-            container.appendChild(img);
-            container.appendChild(delBtn);
-            photoGrid.appendChild(container);
+            // Overlay for filename and date
+            if (photo.name || photo.date) {
+                const overlay = document.createElement('div');
+                overlay.className = 'photo-item-overlay';
+                overlay.innerHTML =
+                    (photo.name ? `<div>${photo.name}</div>` : '') +
+                    (photo.date ? `<div style="font-size:12px;opacity:0.8;">${photo.date}</div>` : '');
+                thumbWrapper.appendChild(overlay);
+            }
+
+            thumbWrapper.appendChild(img);
+            thumbWrapper.appendChild(delBtn);
+            card.appendChild(thumbWrapper);
+            photoGrid.appendChild(card);
         });
     } else {
         const emptyMsg = document.createElement('div');
@@ -271,3 +287,73 @@ document.addEventListener('DOMContentLoaded', async function () {
 // Use saveToGist from album-core.js
 
 // Everything else (renderAlbumList, setupEventListeners, uploadToCloudinary, etc.) remains unchanged...
+
+function handleFiles(files) {
+    if (!currentAlbum) {
+        showNotification('Please select an album before uploading photos.', 'warning');
+        return;
+    }
+    if (!files || files.length === 0) {
+        showNotification('No files selected for upload.', 'warning');
+        return;
+    }
+    uploadProgress.style.display = '';
+    progressList.innerHTML = '';
+    let added = 0;
+    let failed = 0;
+    const total = files.length;
+    const fileResults = Array(total).fill(null);
+    Array.from(files).forEach((file, idx) => {
+        const progressItem = document.createElement('div');
+        progressItem.className = 'progress-item';
+        progressItem.textContent = `Uploading ${file.name}...`;
+        progressList.appendChild(progressItem);
+        if (!file.type.startsWith('image/')) {
+            progressItem.textContent = `${file.name}: Not an image. Skipped.`;
+            progressItem.classList.add('error');
+            failed++;
+            fileResults[idx] = false;
+            updateOverallProgress();
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const photo = {
+                url: e.target.result,
+                name: file.name,
+                date: new Date().toLocaleDateString()
+            };
+            currentAlbum.photos.push(photo);
+            localStorage.setItem('photoAlbums', JSON.stringify(albums));
+            progressItem.textContent = `${file.name}: Uploaded.`;
+            progressItem.classList.add('success');
+            added++;
+            fileResults[idx] = true;
+            selectAlbum(albums.indexOf(currentAlbum));
+            updateOverallProgress();
+        };
+        reader.onerror = function () {
+            progressItem.textContent = `${file.name}: Error reading file.`;
+            progressItem.classList.add('error');
+            failed++;
+            fileResults[idx] = false;
+            updateOverallProgress();
+        };
+        reader.readAsDataURL(file);
+    });
+    function updateOverallProgress() {
+        const done = added + failed;
+        uploadProgress.querySelector('h3').textContent = `Uploading... (${done}/${total})`;
+        if (done === total) finishUpload();
+    }
+    function finishUpload() {
+        setTimeout(() => { uploadProgress.style.display = 'none'; }, 800);
+        showNotification(`✅ Uploaded ${added} photo(s), ${failed} failed. Saving to cloud...`, 'success');
+        if (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID) {
+            saveToGist(window.CONFIG, showNotification, CURRENT_USER);
+        } else {
+            showNotification('⚠️ Cloud sync not configured. Photos saved locally only.', 'warning');
+        }
+        selectAlbum(albums.indexOf(currentAlbum));
+    }
+}
