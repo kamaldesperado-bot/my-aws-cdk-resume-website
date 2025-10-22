@@ -3,7 +3,7 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
@@ -24,7 +24,7 @@ export class PhotoAlbumStack extends cdk.Stack {
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // No capacity planning needed
       removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep data safe!
-      pointInTimeRecovery: true, // Enable backups
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true }, // Enable backups
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
     });
 
@@ -77,9 +77,7 @@ export class PhotoAlbumStack extends cdk.Stack {
     // Create CloudFront distribution (no authentication for now - will add JavaScript login)
     const distribution = new cloudfront.Distribution(this, 'PhotoAlbumDistribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(photoAlbumBucket, {
-          originAccessIdentity: originAccessIdentity,
-        }),
+        origin: S3BucketOrigin.withOriginAccessControl(photoAlbumBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,

@@ -28,7 +28,7 @@ export class LearningAppStack extends cdk.Stack {
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'LearningDistribution', {
       defaultBehavior: {
-        origin: new cloudfront_origins.S3Origin(webBucket),
+        origin: cloudfront_origins.S3BucketOrigin.withOriginAccessControl(webBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
     });
@@ -42,7 +42,7 @@ export class LearningAppStack extends cdk.Stack {
 
     // Lambda for backend (Gemini + YouTube API)
     const backend = new lambda.Function(this, 'LearningBackend', {
-  runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
@@ -55,7 +55,7 @@ export class LearningAppStack extends cdk.Stack {
 
     // Lambda for user registration
     const registerFunction = new lambda.Function(this, 'RegisterFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'register.handler',
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
@@ -67,7 +67,7 @@ export class LearningAppStack extends cdk.Stack {
 
     // Lambda for user login
     const loginFunction = new lambda.Function(this, 'LoginFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'login.handler',
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
