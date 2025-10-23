@@ -1,5 +1,5 @@
 // API endpoint
-const API_BASE = 'https://9jwkbf8f70.execute-api.eu-central-1.amazonaws.com/prod';
+const API_BASE = 'https://ymj6iq3ddc.execute-api.eu-central-1.amazonaws.com/prod';
 
 // Check if user is already logged in
 const token = localStorage.getItem('authToken');
@@ -9,20 +9,20 @@ if (token) {
 }
 
 // Toggle between login and register forms
-document.getElementById('show-register').addEventListener('click', function(e) {
+document.getElementById('show-register').addEventListener('click', function (e) {
   e.preventDefault();
   document.getElementById('login-section').style.display = 'none';
   document.getElementById('register-section').style.display = 'block';
 });
 
-document.getElementById('show-login').addEventListener('click', function(e) {
+document.getElementById('show-login').addEventListener('click', function (e) {
   e.preventDefault();
   document.getElementById('register-section').style.display = 'none';
   document.getElementById('login-section').style.display = 'block';
 });
 
 // Registration form handler
-document.getElementById('register-form').addEventListener('submit', async function(e) {
+document.getElementById('register-form').addEventListener('submit', async function (e) {
   e.preventDefault();
   const username = document.getElementById('register-username').value.trim();
   const password = document.getElementById('register-password').value.trim();
@@ -70,7 +70,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
 });
 
 // Login form handler
-document.getElementById('login-form').addEventListener('submit', async function(e) {
+document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
   const username = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value.trim();
@@ -106,7 +106,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
   }
 });
 
-document.getElementById('chat-form').addEventListener('submit', async function(e) {
+document.getElementById('chat-form').addEventListener('submit', async function (e) {
   e.preventDefault();
   const question = document.getElementById('chat-input').value.trim();
   if (!question) return;
@@ -145,7 +145,7 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
 });
 
 // Logout functionality
-document.getElementById('logout-btn').addEventListener('click', function() {
+document.getElementById('logout-btn').addEventListener('click', function () {
   localStorage.removeItem('authToken');
   localStorage.removeItem('username');
   document.getElementById('auth-container').style.display = 'block';
