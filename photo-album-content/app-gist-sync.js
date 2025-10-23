@@ -1,4 +1,5 @@
 import { albums, currentAlbum, loadFromLocalStorage, syncFromGist, saveToGist, createAlbum, setCurrentAlbum } from './album-core.js';
+import { handleFiles } from './album-upload.js';
 
 // ========================= ALBUM SELECTION =========================
 
@@ -147,11 +148,11 @@ function setupEventListeners() {
         e.stopPropagation();
         this.classList.remove('dragover');
         const files = e.dataTransfer?.files;
-        if (files && files.length > 0) handleFiles(files);
+        if (files && files.length > 0) handleFiles(files, currentAlbum, albums, showNotification, selectAlbum, uploadProgress, progressList);
     });
 
     fileInput.addEventListener('change', function () {
-        if (this.files && this.files.length > 0) handleFiles(this.files);
+        if (this.files && this.files.length > 0) handleFiles(this.files, currentAlbum, albums, showNotification, selectAlbum, uploadProgress, progressList);
     });
 
     const closeLightboxBtn = document.querySelector('.close-lightbox');
@@ -213,6 +214,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
+        // --- Chunking config ---
+        const PHOTOS_PER_ZIP = 50;
+        // Optionally, you could also chunk by size, but for simplicity, chunk by count
+        const totalPhotos = currentAlbum.photos.length;
+        const numZips = Math.ceil(totalPhotos / PHOTOS_PER_ZIP);
+
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '⬇️ Preparing...';
 
@@ -223,33 +230,39 @@ document.addEventListener('DOMContentLoaded', async function () {
             await new Promise(resolve => { script.onload = resolve; });
         }
 
-        const zip = new JSZip();
-        let count = 0;
-        for (const photo of currentAlbum.photos) {
-            try {
-                const response = await fetch(photo.url);
-                const blob = await response.blob();
-                zip.file(photo.name || `photo${++count}.jpg`, blob);
-            } catch (e) {
-                console.error('Error downloading photo:', photo.url, e);
-            }
-        }
+        showNotification(`Preparing ${numZips} ZIP file(s) for download...`, 'info');
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentAlbum.name || 'album'}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-            a.remove();
-        }, 2000);
+        for (let zipIdx = 0; zipIdx < numZips; zipIdx++) {
+            const zip = new JSZip();
+            let count = 0;
+            const start = zipIdx * PHOTOS_PER_ZIP;
+            const end = Math.min(start + PHOTOS_PER_ZIP, totalPhotos);
+            for (let i = start; i < end; i++) {
+                const photo = currentAlbum.photos[i];
+                try {
+                    const response = await fetch(photo.url);
+                    const blob = await response.blob();
+                    zip.file(photo.name || `photo${i + 1}.jpg`, blob);
+                } catch (e) {
+                    console.error('Error downloading photo:', photo.url, e);
+                }
+            }
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentAlbum.name || 'album'}_part${zipIdx + 1}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+                a.remove();
+            }, 2000);
+        }
 
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = '⬇️ Download Album';
-        showNotification('✅ Album ZIP ready for download!', 'success');
+        showNotification(`✅ Download ready: ${numZips} ZIP file(s) created.`, 'success');
     });
 
     console.log('📱 Photo Album Loading with GitHub Gist Sync...');
@@ -264,88 +277,28 @@ document.addEventListener('DOMContentLoaded', async function () {
     showNotification('📥 Syncing albums from cloud...', 'info');
     await syncFromGist(window.CONFIG, showNotification, renderAlbumList);
     setupEventListeners();
+
+    // Album delete button logic
+    const deleteAlbumBtn = document.getElementById('deleteAlbumBtn');
+    if (deleteAlbumBtn) {
+        deleteAlbumBtn.addEventListener('click', function () {
+            if (!currentAlbum) {
+                showNotification('No album selected to delete.', 'warning');
+                return;
+            }
+            if (!confirm(`Delete album "${currentAlbum.name}" and all its photos? This cannot be undone!`)) return;
+            const idx = albums.indexOf(currentAlbum);
+            if (idx >= 0) {
+                albums.splice(idx, 1);
+                localStorage.setItem('photoAlbums', JSON.stringify(albums));
+                if (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID) {
+                    saveToGist(window.CONFIG, showNotification, CURRENT_USER);
+                }
+                setCurrentAlbum(null);
+                renderAlbumList();
+                selectAlbum(-1);
+                showNotification('Album deleted.', 'success');
+            }
+        });
+    }
 });
-
-// ========================= FIXED MULTI-UPLOAD =========================
-
-async function handleFiles(files) {
-    if (!currentAlbum) {
-        showNotification('Please select an album before uploading photos.', 'warning');
-        return;
-    }
-    if (!files || files.length === 0) {
-        showNotification('No files selected for upload.', 'warning');
-        return;
-    }
-
-    uploadProgress.style.display = '';
-    progressList.innerHTML = '';
-    let added = 0;
-    let failed = 0;
-    const total = files.length;
-
-    const fileArr = Array.from(files);
-    const progressItems = fileArr.map(file => {
-        const item = document.createElement('div');
-        item.className = 'progress-item';
-        item.textContent = `Uploading ${file.name}...`;
-        progressList.appendChild(item);
-        return item;
-    });
-
-    uploadProgress.querySelector('h3').textContent = `Uploading... (0/${total})`;
-
-    for (let i = 0; i < total; i++) {
-        const file = fileArr[i];
-        const progressItem = progressItems[i];
-
-        if (!file.type.startsWith('image/')) {
-            progressItem.textContent = `${file.name}: Not an image. Skipped.`;
-            progressItem.classList.add('error');
-            failed++;
-            uploadProgress.querySelector('h3').textContent = `Uploading... (${i + 1}/${total})`;
-            continue;
-        }
-
-        try {
-            const base64 = await readFileAsDataURL(file);
-            const photo = {
-                url: base64,
-                name: file.name,
-                date: new Date().toLocaleDateString()
-            };
-            currentAlbum.photos.push(photo);
-            localStorage.setItem('photoAlbums', JSON.stringify(albums));
-
-            progressItem.textContent = `${file.name}: Uploaded.`;
-            progressItem.classList.add('success');
-            added++;
-        } catch (err) {
-            progressItem.textContent = `${file.name}: Error reading file.`;
-            progressItem.classList.add('error');
-            failed++;
-        }
-
-        uploadProgress.querySelector('h3').textContent = `Uploading... (${i + 1}/${total})`;
-        selectAlbum(albums.indexOf(currentAlbum)); // Refresh album view
-    }
-
-    setTimeout(() => (uploadProgress.style.display = 'none'), 800);
-    showNotification(`✅ Uploaded ${added} photo(s), ${failed} failed.`, 'success');
-
-    if (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID) {
-        saveToGist(window.CONFIG, showNotification, CURRENT_USER);
-    } else {
-        showNotification('⚠️ Cloud sync not configured. Photos saved locally only.', 'warning');
-    }
-}
-
-// Promise wrapper for FileReader
-function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
