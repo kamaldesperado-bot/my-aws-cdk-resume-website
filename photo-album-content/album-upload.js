@@ -1,5 +1,5 @@
 // album-upload.js
-// Handles photo upload logic for the photo album app
+// Handles photo upload logic for the photo album app using Cloudinary
 
 export async function handleFiles(files, currentAlbum, albums, showNotification, selectAlbum, uploadProgress, progressList) {
     if (!currentAlbum) {
@@ -18,7 +18,6 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
     let added = 0;
     let failed = 0;
     const total = files.length;
-
     const fileArr = Array.from(files);
     const progressItems = fileArr.map(file => {
         const item = document.createElement('div');
@@ -36,7 +35,6 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
         return item;
     });
 
-    // Progress header
     let progressHeader = uploadProgress ? uploadProgress.querySelector('h3') : null;
     if (!progressHeader && uploadProgress) {
         progressHeader = document.createElement('h3');
@@ -45,7 +43,6 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
     }
     if (progressHeader) progressHeader.textContent = `Uploading... (0/${total})`;
 
-    // Collect new photos first (no re-renders mid-loop!)
     const newPhotos = [];
 
     for (let i = 0; i < total; i++) {
@@ -63,12 +60,20 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
         }
 
         try {
-            const base64 = await readFileAsDataURLWithProgress(file, percent => {
-                if (statusEl) statusEl.textContent = percent + '%';
-                if (fillEl) fillEl.style.width = percent + '%';
+            // Upload to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', window.CONFIG.CLOUDINARY_UPLOAD_PRESET);
+            const cloudName = window.CONFIG.CLOUDINARY_CLOUD_NAME;
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            const uploadRes = await fetch(url, {
+                method: 'POST',
+                body: formData
             });
+            if (!uploadRes.ok) throw new Error('Cloudinary upload failed');
+            const data = await uploadRes.json();
             newPhotos.push({
-                url: base64,
+                url: data.secure_url,
                 name: file.name,
                 date: new Date().toLocaleDateString()
             });
@@ -82,37 +87,16 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
             progressItem.classList.add('error');
             failed++;
         }
-
         if (progressHeader) progressHeader.textContent = `Uploading... (${i + 1}/${total})`;
     }
 
-    // ✅ Update album only once (after all uploads)
     if (newPhotos.length > 0) {
         currentAlbum.photos.push(...newPhotos);
         localStorage.setItem('photoAlbums', JSON.stringify(albums));
         selectAlbum(albums.indexOf(currentAlbum));
     }
-
-    // Hide progress smoothly
     setTimeout(() => {
         if (uploadProgress) uploadProgress.style.display = 'none';
     }, 800);
-
     showNotification(`✅ Uploaded ${added} photo(s), ${failed} failed.`, 'success');
-}
-
-// --- Helper for async FileReader with progress ---
-export function readFileAsDataURLWithProgress(file, onProgress) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.onprogress = e => {
-            if (e.lengthComputable && typeof onProgress === 'function') {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                onProgress(percent);
-            }
-        };
-        reader.readAsDataURL(file);
-    });
 }

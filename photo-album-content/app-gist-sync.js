@@ -105,6 +105,7 @@ function renderAlbumList() {
 // ========================= EVENT LISTENERS =========================
 
 function setupEventListeners() {
+    console.log('[DEBUG] setupEventListeners called');
     albumSelect.addEventListener('change', function () {
         if (this.value !== '') selectAlbum(parseInt(this.value));
         else {
@@ -115,13 +116,33 @@ function setupEventListeners() {
     });
 
     newAlbumBtn.addEventListener('click', function () {
+        console.log('[DEBUG] New Album button clicked');
         newAlbumModal.classList.add('show');
         newAlbumName.focus();
     });
 
-    createAlbumBtn.addEventListener('click', createAlbum);
+    function handleCreateAlbum() {
+        const saveToGistFn = (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID)
+            ? () => saveToGist(window.CONFIG, showNotification, CURRENT_USER)
+            : () => { };
+        createAlbum(
+            newAlbumName.value,
+            CURRENT_USER,
+            showNotification,
+            saveToGistFn,
+            () => {
+                renderAlbumList();
+                // Auto-select the new album
+                const idx = albums.findIndex(a => a.name === newAlbumName.value.trim());
+                if (idx >= 0) selectAlbum(idx);
+            },
+            newAlbumModal,
+            newAlbumName
+        );
+    }
+    createAlbumBtn.addEventListener('click', handleCreateAlbum);
     newAlbumName.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') createAlbum();
+        if (e.key === 'Enter') handleCreateAlbum();
     });
 
     const closeModal = newAlbumModal.querySelector('.close');

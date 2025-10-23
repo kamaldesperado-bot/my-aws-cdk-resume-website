@@ -52,6 +52,13 @@ export class PhotoAlbumStack extends cdk.Stack {
       versioned: true, // Enable versioning for safety
     });
 
+    // Allow CORS for S3 uploads (for development; restrict in production)
+    photoAlbumBucket.addCorsRule({
+      allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET],
+      allowedOrigins: ['*'], // Change to your domain in production
+      allowedHeaders: ['*'],
+    });
+
     // Create Origin Access Identity for CloudFront
     const originAccessIdentity = new cloudfront.OriginAccessIdentity(
       this,

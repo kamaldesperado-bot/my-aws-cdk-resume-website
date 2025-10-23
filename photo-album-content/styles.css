@@ -1,3 +1,121 @@
+/* Modern modal overlay and content */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(40, 40, 60, 0.35);
+    backdrop-filter: blur(2px);
+    transition: opacity 0.3s;
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 40px rgba(60, 60, 120, 0.18);
+    padding: 36px 32px 28px 32px;
+    min-width: 320px;
+    max-width: 95vw;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    animation: modal-pop 0.25s cubic-bezier(.4, 1.4, .6, 1) 1;
+}
+
+@keyframes modal-pop {
+    0% {
+        transform: scale(0.95) translateY(30px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-content h2 {
+    color: #667eea;
+    margin-bottom: 18px;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.close {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 2;
+}
+
+.close:hover {
+    color: #667eea;
+}
+
+.input-album-name {
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 18px;
+    background: #f8f9fd;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-album-name:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.13);
+    background: #fff;
+}
+
+.btn-create {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+}
+
+.btn-create:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 5px 18px rgba(102, 126, 234, 0.18);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Show modal when .show is added */
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 /* Photo Album Styles */
 
 * {
