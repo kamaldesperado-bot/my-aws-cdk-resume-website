@@ -32,6 +32,9 @@ export class SocialAppStack extends cdk.Stack {
             autoDeleteObjects: true,
         });
 
+        // Dynamically get the S3 website origin for CORS
+        const websiteOrigin = `http://${websiteBucket.bucketWebsiteDomainName}`;
+
         // Add a bucket policy for public read access
         websiteBucket.addToResourcePolicy(new cdk.aws_iam.PolicyStatement({
             actions: ['s3:GetObject'],
@@ -74,6 +77,7 @@ export class SocialAppStack extends cdk.Stack {
                 LIKES_TABLE: likesTable.tableName,
                 IMAGES_BUCKET: imagesBucket.bucketName,
                 ADMIN_USERNAME: 'admin', // Change as needed
+                WEBSITE_ORIGIN: websiteOrigin,
             },
             timeout: cdk.Duration.seconds(20),
         });
@@ -118,6 +122,28 @@ export class SocialAppStack extends cdk.Stack {
 
         const postsResource = api.root.addResource('posts');
         postsResource.addMethod('GET', new apigateway.LambdaIntegration(backendLambda));
+        // Explicit OPTIONS for CORS (use exact S3 website origin)
+        postsResource.addMethod('OPTIONS', new apigateway.MockIntegration({
+            integrationResponses: [{
+                statusCode: '200',
+                responseParameters: {
+                    'method.response.header.Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+                    'method.response.header.Access-Control-Allow-Origin': `'${websiteOrigin}'`,
+                    'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,POST'",
+                },
+            }],
+            passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
+            requestTemplates: { 'application/json': '{"statusCode": 200}' },
+        }), {
+            methodResponses: [{
+                statusCode: '200',
+                responseParameters: {
+                    'method.response.header.Access-Control-Allow-Headers': true,
+                    'method.response.header.Access-Control-Allow-Origin': true,
+                    'method.response.header.Access-Control-Allow-Methods': true,
+                },
+            }],
+        });
         postsResource.addCorsPreflight({
             allowOrigins: apigateway.Cors.ALL_ORIGINS,
             allowMethods: ['GET', 'OPTIONS'],
