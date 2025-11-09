@@ -703,3 +703,262 @@ to {
         max-width: calc(100% - 20px);
     }
 }
+
+/* ========================= ALBUM ANALYSIS STYLES ========================= */
+
+.modal-large {
+    max-width: 900px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.analysis-spinner {
+    text-align: center;
+    font-size: 18px;
+    color: #6366f1;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.analysis-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.summary-item strong {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.summary-item span {
+    font-size: 14px;
+    opacity: 0.95;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.btn-select-all {
+    padding: 10px 20px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-select-all:hover {
+    background: #4f46e5;
+    transform: translateY(-1px);
+}
+
+.btn-bulk-delete {
+    padding: 10px 20px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+
+.btn-bulk-delete:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.btn-bulk-delete:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.issues-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.issue-section {
+    margin-bottom: 30px;
+}
+
+.issue-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.duplicate-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #fef3c7;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+}
+
+.duplicate-group h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 10px;
+}
+
+.issue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.issue-card {
+    position: relative;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+    background: white;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.issue-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
+}
+
+.issue-card.selected {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.issue-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.issue-thumbnail {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.issue-info {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.issue-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.issue-detail {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.no-issues {
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 18px;
+    color: #10b981;
+    font-weight: 500;
+}
+
+.btn-analyse-album {
+    padding: 10px 20px;
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-analyse-album:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+@media (max-width: 768px) {
+    .modal-large {
+        width: 98%;
+        max-height: 95vh;
+    }
+
+    .analysis-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .summary-item strong {
+        font-size: 24px;
+    }
+
+    .bulk-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn-bulk-delete {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .issue-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .issue-thumbnail {
+        height: 120px;
+    }
+}

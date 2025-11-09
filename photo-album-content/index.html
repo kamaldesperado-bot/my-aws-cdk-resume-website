@@ -34,6 +34,8 @@
                     <option value="">-- Wählen Sie ein Album / Select Album --</option>
                 </select>
                 <button id="newAlbumBtn" class="btn-new-album">+ Neues Album / New Album</button>
+                <button id="analyseAlbumBtn" class="btn-analyse-album" style="background: #8b5cf6; color: white;">🔍
+                    Analyse Album / Analyse Album</button>
                 <button id="deleteAlbumBtn" class="btn-delete-album" style="background: #ef4444; color: white;">🗑️
                     Album löschen / Delete Album</button>
             </div>
@@ -76,6 +78,54 @@
             </div>
         </div>
 
+        <!-- Analysis Results Modal -->
+        <div id="analysisModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close" id="closeAnalysisModal">&times;</span>
+                <h2>🔍 Album Analysis Results</h2>
+
+                <div id="analysisProgress" style="display: none;">
+                    <div class="analysis-spinner">Analyzing images...</div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="analysisProgressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="analysisResults" style="display: none;">
+                    <div class="analysis-summary">
+                        <div class="summary-item">
+                            <strong id="duplicatesCount">0</strong>
+                            <span>Duplicates</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong id="blurryCount">0</strong>
+                            <span>Blurry</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong id="lowQualityCount">0</strong>
+                            <span>Low Quality</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong id="totalIssuesCount">0</strong>
+                            <span>Total Issues</span>
+                        </div>
+                    </div>
+
+                    <div class="bulk-actions">
+                        <button id="selectAllIssues" class="btn-select-all">✓ Select All Issues</button>
+                        <button id="bulkDeleteSelected" class="btn-bulk-delete"
+                            style="background: #ef4444; color: white;">
+                            🗑️ Delete Selected (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+
+                    <div id="issuesList" class="issues-list">
+                        <!-- Issues will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Photo Lightbox -->
         <div id="lightbox" class="lightbox">
             <span class="close-lightbox">&times;</span>
@@ -90,6 +140,9 @@
     <!-- Configuration -->
     <script src="config.js"></script>
     <script src="config.local.js"></script>
+
+    <!-- Album Analysis Module -->
+    <script type="module" src="album-analysis.js"></script>
 
     <!-- GitHub Gist Sync App -->
     <script type="module" src="app-gist-sync.js"></script>

@@ -93,7 +93,13 @@ Expected deployment time: ~5-10 minutes
    - Wait for "✅ Erfolgreich hochgeladen" messages
 4. **View Gallery**: Photos appear in grid layout
 5. **View Fullscreen**: Click any photo for lightbox view
-6. **Logout**: Click logout button
+6. **Analyse Album** (NEW!): Click "🔍 Analyse Album" button
+   - AI detects duplicates, blurry, and low-quality images
+   - Review flagged photos with thumbnails
+   - Select problematic images (auto-selected by default)
+   - Click "Delete Selected (N)" to bulk delete
+7. **Download Album**: Click "⬇️ Download Album" to download all photos as ZIP
+8. **Logout**: Click logout button
 
 ## Step 7: Create TinyURL (Optional)
 
@@ -102,7 +108,71 @@ Expected deployment time: ~5-10 minutes
 3. Create custom alias (e.g., `kamal-photos`)
 4. Save the short URL
 
-## Step 8: Change Default Password (Recommended)
+## Step 8: Using AI Album Analysis (NEW!)
+
+The photo album now includes AI-powered analysis to help you clean up your albums by detecting:
+- **Duplicate images**: Identical or very similar photos
+- **Blurry images**: Out-of-focus or motion-blurred photos
+- **Low-quality images**: Low resolution or unusual aspect ratios
+
+### How to Use Album Analysis:
+
+1. **Select an Album**: Choose an album from the dropdown
+2. **Click "🔍 Analyse Album"**: The purple button next to Delete Album
+3. **Wait for Analysis**: Progress bar shows the analysis status
+   - Calculating image hashes (~33%)
+   - Detecting duplicates (~50%)
+   - Detecting blurry images (~75%)
+   - Analyzing quality (~100%)
+4. **Review Results**: Modal shows categorized issues
+   - Summary dashboard with counts
+   - Duplicate sets grouped together
+   - Blurry images with blur scores
+   - Low-quality images with reasons
+5. **Select Photos to Delete**:
+   - Problematic photos are auto-selected (keeps first in duplicate sets)
+   - Use "✓ Select All Issues" to toggle all selections
+   - Or manually check/uncheck individual photos
+6. **Bulk Delete**: Click "🗑️ Delete Selected (N)" button
+   - Confirm deletion
+   - Photos are removed from album and synced to cloud
+   - Gallery refreshes automatically
+
+### Analysis Algorithms (100% Free & Client-Side):
+
+**Duplicate Detection:**
+- Uses 16x16 perceptual hashing (256-bit comparison)
+- Color histogram analysis (16 bins per RGB channel)
+- Detects images with <6% pixel difference AND >85% color similarity
+- Catches exact duplicates, resized versions, and recompressed images
+
+**Blur Detection:**
+- Laplacian variance calculation on 200x200 canvas
+- Measures image sharpness using edge detection
+- Flags images with variance < 100 as blurry
+
+**Quality Analysis:**
+- Checks resolution (flags <0.5 megapixels as low-res)
+- Analyzes aspect ratio (flags extreme ratios >3:1)
+- Identifies images with technical issues
+
+### Technical Details:
+
+- **Processing**: 100% client-side in your browser (JavaScript)
+- **Privacy**: No data sent to external servers
+- **Performance**: Analyzes ~10-20 images per second
+- **Cost**: $0.00 - completely free, no API limits
+- **Accuracy**: Perceptual hash + color histogram for robust detection
+
+### Tips for Best Results:
+
+- ✅ Works best with albums containing 10-100 photos
+- ✅ For large albums (100+ photos), analysis may take 1-2 minutes
+- ✅ Keep the first image in duplicate sets (usually best quality)
+- ✅ Review blur scores - lower values = more blurry
+- ✅ Check the browser console (F12) for detailed detection logs
+
+## Step 9: Change Default Password (Recommended)
 
 1. Open: `photo-album-content/login.html`
 2. Find lines around 198-201:
@@ -156,6 +226,9 @@ Expected deployment time: ~5-10 minutes
 ✅ **Secure Storage**: Photos on Cloudinary CDN (HTTPS, fast global delivery)
 ✅ **No Backend**: Client-side only (no servers, no databases)
 ✅ **Free Storage**: 25GB FREE on Cloudinary forever
+✅ **AI-Powered Album Analysis**: Detect duplicates, blurry, and low-quality images (NEW!)
+✅ **Bulk Delete**: Select and delete multiple problematic photos at once (NEW!)
+✅ **GitHub Gist Sync**: Sync album metadata across devices (NEW!)
 
 ## Troubleshooting
 
@@ -235,29 +308,40 @@ Photos remain on Cloudinary even if removed from album. To delete:
 ```
 my_aws_cdk_infrastructure/
 ├── bin/
-│   └── resume-stack.ts          # Main CDK app (both stacks)
+│   └── main.ts                  # Main CDK app entry point
 ├── lib/
-│   ├── resume-stack.ts          # Resume website stack
-│   └── photo-album-stack.ts     # Photo album stack ← NEW
-├── resume-content/              # Resume website files
-└── photo-album-content/         # Photo album files ← NEW
-    ├── login.html              # Login page (photos/Album2024!)
-    ├── index.html              # Main photo album interface
-    ├── logout.html             # Logout page
-    ├── error.html              # 404 error page
-    ├── styles.css              # Comprehensive styling
-    └── app.js                  # Cloudinary integration ← CONFIGURE THIS
+│   ├── resume-static-website-stack.ts    # Resume website stack
+│   ├── photo-album-stack.ts              # Photo album stack
+│   └── learning-app-stack.ts             # Learning app stack
+├── resume-content/                       # Resume website files
+├── learning-frontend/                    # Learning app frontend
+├── learning-backend/                     # Learning app backend
+└── photo-album-content/                  # Photo album files
+    ├── login.html                       # Login page (photos/Album2024!)
+    ├── index.html                       # Main photo album interface
+    ├── logout.html                      # Logout page
+    ├── error.html                       # 404 error page
+    ├── styles.css                       # Comprehensive styling
+    ├── config.js                        # Configuration template
+    ├── config.local.js                  # Local configuration (credentials)
+    ├── app-gist-sync.js                 # Main app with GitHub Gist sync
+    ├── album-core.js                    # Core album management logic
+    ├── album-upload.js                  # Photo upload handling
+    └── album-analysis.js                # AI-powered album analysis ← NEW
 ```
 
 ## Next Steps After Setup
 
-1. ✅ Upload your 1000+ photos to albums
-2. 🔄 Share TinyURL with family/friends
-3. 🔄 Consider changing default password
-4. 🔄 Organize photos into named albums (Vacation, Family, Events, etc.)
-5. 🔄 Monitor Cloudinary usage in dashboard
-6. 🔄 Set up CloudWatch alarms for AWS costs (optional)
+1. ✅ Upload your photos to albums
+2. ✅ Use AI Album Analysis to detect and remove duplicates, blurry, or low-quality images
+3. ✅ Set up GitHub Gist sync for cross-device album metadata synchronization
+4. 🔄 Share TinyURL with family/friends
+5. 🔄 Consider changing default password
+6. 🔄 Organize photos into named albums (Vacation, Family, Events, etc.)
+7. 🔄 Monitor Cloudinary usage in dashboard
+8. 🔄 Download album backups as ZIP files
+9. 🔄 Set up CloudWatch alarms for AWS costs (optional)
 
 ---
 
-**Enjoy your photo album! 📸**
+**Enjoy your intelligent photo album with AI-powered analysis! 📸🤖**
