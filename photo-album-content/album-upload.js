@@ -1,6 +1,8 @@
 // album-upload.js
 // Handles photo upload logic for the photo album app using Cloudinary
 
+import { saveToGist } from './album-core.js';
+
 export async function handleFiles(files, currentAlbum, albums, showNotification, selectAlbum, uploadProgress, progressList) {
     if (!currentAlbum) {
         showNotification('Please select an album before uploading photos.', 'warning');
@@ -93,6 +95,15 @@ export async function handleFiles(files, currentAlbum, albums, showNotification,
     if (newPhotos.length > 0) {
         currentAlbum.photos.push(...newPhotos);
         localStorage.setItem('photoAlbums', JSON.stringify(albums));
+
+        // Sync to GitHub Gist if configured
+        if (window.CONFIG && window.CONFIG.GITHUB_TOKEN && window.CONFIG.GIST_ID &&
+            window.CONFIG.GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE' &&
+            window.CONFIG.GIST_ID !== 'YOUR_GIST_ID_HERE') {
+            const CURRENT_USER = sessionStorage.getItem('photoAlbumUser') || 'photos';
+            saveToGist(window.CONFIG, showNotification, CURRENT_USER);
+        }
+
         selectAlbum(albums.indexOf(currentAlbum));
     }
     setTimeout(() => {
