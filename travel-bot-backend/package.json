@@ -1,0 +1,25 @@
+{
+  "name": "travel-bot-backend",
+  "version": "1.0.0",
+  "description": "Multi-cloud travel bot backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@azure/ai-text-analytics": "^5.1.0",
+    "@google-cloud/dialogflow": "^6.14.0",
+    "aws-sdk": "^2.1490.0",
+    "axios": "^1.6.0",
+    "sentiment": "^5.0.2"
+  },
+  "keywords": [
+    "travel",
+    "bot",
+    "multi-cloud",
+    "aws",
+    "lambda"
+  ],
+  "author": "Travel Bot",
+  "license": "MIT"
+}

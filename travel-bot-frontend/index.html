@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Planner - Multi-Cloud Bot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 AI Travel Planner</h1>
+            <p>Real multi-cloud AI powered travel assistant</p>
+        </header>
+
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <strong>TravelBot:</strong> Hi! I'm your REAL AI travel assistant powered by AWS Lex, Google Dialogflow, and Azure Cognitive Services. 
+                        I can help you plan trips, find flights, check weather, and create itineraries. 
+                        Try saying: "Plan a 3-day trip to Paris under €900" ✈️
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Ask me about travel plans, destinations, weather..." />
+                <button id="send-button">Send</button>
+                <button id="reset-button" class="reset-btn">🔄 Reset</button>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🤖 Real Multi-Cloud AI</h3>
+                <p>AWS Lex (Intent) + Google Dialogflow (Conversation) + Azure (Sentiment)</p>
+            </div>
+            <div class="feature">
+                <h3>🌤️ Real-time Weather</h3>
+                <p>Live weather data for any destination</p>
+            </div>
+            <div class="feature">
+                <h3>📋 Smart Itineraries</h3>
+                <p>AI-generated travel plans based on your preferences</p>
+            </div>
+        </div>
+
+        <div class="cloud-status">
+            <div class="cloud-provider">
+                <span class="status-dot aws"></span>
+                <span>AWS</span>
+            </div>
+            <div class="cloud-provider">
+                <span class="status-dot gcp"></span>
+                <span>Google Cloud</span>
+            </div>
+            <div class="cloud-provider">
+                <span class="status-dot azure"></span>
+                <span>Azure</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="travel-bot.js"></script>
+</body>
+</html>
