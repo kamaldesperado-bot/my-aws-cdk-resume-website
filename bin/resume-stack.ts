@@ -22,7 +22,7 @@ new PhotoAlbumStack(app, 'PhotoAlbumStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,
   },
-  description: 'CDK Stack for photo album website with Cloudinary integration',
+  description: 'CDK Stack for photo album website with AWS-native image processing',
 });
 
 // Learning app stack

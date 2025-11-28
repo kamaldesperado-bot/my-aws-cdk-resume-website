@@ -1,358 +1,442 @@
-// Photo Album App with Cloudinary Integration
+// Photo Album App - AWS Native
+class PhotoAlbumApp {
+    constructor() {
+        this.apiUrl = window.CONFIG?.API_URL || 'https://cmimy7yauc.execute-api.eu-central-1.amazonaws.com/prod';
+        this.photos = [];
+        this.albums = [];
+        this.currentView = 'grid';
+        this.currentPhotoId = null;
+        this.currentAlbumId = 'default';
+        this.checkAuth();
+        this.init();
+    }
 
-// ⚠️ IMPORTANT: You need to create a FREE Cloudinary account and get your credentials
-// Sign up at: https://cloudinary.com/users/register/free
-// Then replace these with your actual values:
+    checkAuth() {
+        if (sessionStorage.getItem('photoAlbumAuth') !== 'true') {
+            window.location.href = 'login.html';
+            return;
+        }
+    }
 
-const CLOUDINARY_CLOUD_NAME = 'dnxxpf1o3'; // Your Cloudinary cloud name
-const CLOUDINARY_UPLOAD_PRESET = 'upload-preset'; // Your unsigned upload preset
+    init() {
+        this.setupEventListeners();
+        this.loadPhotos();
+        this.loadAlbums();
+        this.updateUserInfo();
+    }
 
-// Album data structure (stored in localStorage)
-let albums = JSON.parse(localStorage.getItem('photoAlbums') || '[]');
-let currentAlbum = null;
+    setupEventListeners() {
+        const fileInput = document.getElementById('fileInput');
+        const uploadBox = document.getElementById('uploadBox');
 
-// DOM Elements
-const albumSelect = document.getElementById('albumSelect');
-const newAlbumBtn = document.getElementById('newAlbumBtn');
-const uploadSection = document.getElementById('uploadSection');
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-const uploadProgress = document.getElementById('uploadProgress');
-const progressList = document.getElementById('progressList');
-const gallerySection = document.getElementById('gallerySection');
-const albumTitle = document.getElementById('albumTitle');
-const photoCount = document.getElementById('photoCount');
-const photoGrid = document.getElementById('photoGrid');
-const newAlbumModal = document.getElementById('newAlbumModal');
-const newAlbumName = document.getElementById('newAlbumName');
-const createAlbumBtn = document.getElementById('createAlbumBtn');
-const lightbox = document.getElementById('lightbox');
-const lightboxImg = document.getElementById('lightboxImg');
-const lightboxCaption = document.getElementById('lightboxCaption');
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            this.handleFileSelect(e.target.files);
+        });
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    loadAlbums();
-    setupEventListeners();
-});
+        // Drag and drop
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
 
-// Load albums into dropdown
-function loadAlbums() {
-    albumSelect.innerHTML = '<option value="">-- Wählen Sie ein Album / Select Album --</option>';
-    
-    albums.forEach((album, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `${album.name} (${album.photos.length} Fotos)`;
-        albumSelect.appendChild(option);
-    });
-}
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
 
-// Setup event listeners
-function setupEventListeners() {
-    // Album selection
-    albumSelect.addEventListener('change', function() {
-        if (this.value !== '') {
-            selectAlbum(parseInt(this.value));
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            this.handleFileSelect(e.dataTransfer.files);
+        });
+
+        // View controls
+        document.querySelectorAll('.btn-view').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.currentView = e.target.dataset.view;
+                this.renderPhotos();
+            });
+        });
+    }
+
+    async handleFileSelect(files) {
+        const fileArray = Array.from(files);
+        const imageFiles = fileArray.filter(file => file.type.startsWith('image/'));
+        
+        if (imageFiles.length === 0) {
+            this.showNotification('Please select image files only', 'error');
+            return;
+        }
+
+        for (const file of imageFiles) {
+            await this.uploadPhoto(file);
+        }
+    }
+
+    async uploadPhoto(file) {
+        try {
+            this.showUploadProgress(true);
+            
+            // Get signed upload URL
+            const response = await fetch(`${this.apiUrl}/upload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: file.name,
+                    contentType: file.type
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get upload URL');
+            }
+
+            const { uploadUrl, key } = await response.json();
+
+            // Upload to S3
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload file');
+            }
+
+            // Add to photos array (simulate)
+            const photo = {
+                id: Date.now() + Math.random(),
+                name: file.name,
+                key: key,
+                url: `https://d3li9uvhi7686q.cloudfront.net/images/${key}`,
+                uploadDate: new Date().toISOString(),
+                size: file.size
+            };
+
+            this.photos.unshift(photo);
+            this.renderPhotos();
+            this.showNotification('Photo uploaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: ' + error.message, 'error');
+        } finally {
+            this.showUploadProgress(false);
+        }
+    }
+
+    showUploadProgress(show) {
+        const progressDiv = document.getElementById('uploadProgress');
+        const uploadBox = document.getElementById('uploadBox');
+        
+        if (show) {
+            progressDiv.style.display = 'block';
+            uploadBox.style.opacity = '0.5';
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = `Uploading... ${Math.round(progress)}%`;
+            }, 200);
         } else {
-            hideAlbumView();
+            progressDiv.style.display = 'none';
+            uploadBox.style.opacity = '1';
+            document.getElementById('progressFill').style.width = '0%';
         }
-    });
-
-    // New album button
-    newAlbumBtn.addEventListener('click', function() {
-        newAlbumModal.classList.add('show');
-        newAlbumName.focus();
-    });
-
-    // Create album
-    createAlbumBtn.addEventListener('click', createAlbum);
-    newAlbumName.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') createAlbum();
-    });
-
-    // Close modal
-    document.querySelector('.close').addEventListener('click', function() {
-        newAlbumModal.classList.remove('show');
-        newAlbumName.value = '';
-    });
-
-    // Upload area interactions
-    uploadArea.addEventListener('click', function() {
-        fileInput.click();
-    });
-
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', function() {
-        this.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        handleFiles(files);
-    });
-
-    fileInput.addEventListener('change', function() {
-        handleFiles(this.files);
-    });
-
-    // Lightbox close
-    document.querySelector('.close-lightbox').addEventListener('click', function() {
-        lightbox.classList.remove('show');
-    });
-
-    lightbox.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.remove('show');
-        }
-    });
-}
-
-// Create new album
-function createAlbum() {
-    const name = newAlbumName.value.trim();
-    
-    if (!name) {
-        alert('Bitte geben Sie einen Album-Namen ein / Please enter an album name');
-        return;
     }
 
-    const newAlbum = {
-        name: name,
-        created: new Date().toISOString(),
-        photos: []
-    };
-
-    albums.push(newAlbum);
-    saveAlbums();
-    loadAlbums();
-
-    // Select the new album
-    albumSelect.value = albums.length - 1;
-    selectAlbum(albums.length - 1);
-
-    // Close modal
-    newAlbumModal.classList.remove('show');
-    newAlbumName.value = '';
-}
-
-// Select album
-function selectAlbum(index) {
-    currentAlbum = index;
-    const album = albums[index];
-    
-    // Show upload section
-    uploadSection.style.display = 'block';
-    
-    // Show gallery
-    gallerySection.style.display = 'block';
-    albumTitle.textContent = album.name;
-    photoCount.textContent = `${album.photos.length} Foto${album.photos.length !== 1 ? 's' : ''}`;
-    
-    // Display photos
-    displayPhotos(album.photos);
-}
-
-// Hide album view
-function hideAlbumView() {
-    uploadSection.style.display = 'none';
-    gallerySection.style.display = 'none';
-    currentAlbum = null;
-}
-
-// Handle file uploads
-async function handleFiles(files) {
-    if (currentAlbum === null) {
-        alert('Bitte wählen Sie zuerst ein Album aus / Please select an album first');
-        return;
+    loadPhotos() {
+        // Simulate loading photos (in real app, fetch from API/DynamoDB)
+        this.photos = [
+            {
+                id: 1,
+                name: 'Sample Photo 1',
+                url: 'https://picsum.photos/400/300?random=1',
+                uploadDate: new Date().toISOString(),
+                size: 1024000
+            },
+            {
+                id: 2,
+                name: 'Sample Photo 2',
+                url: 'https://picsum.photos/400/300?random=2',
+                uploadDate: new Date().toISOString(),
+                size: 2048000
+            }
+        ];
+        this.renderPhotos();
     }
 
-    if (files.length === 0) return;
-
-    // Check Cloudinary configuration
-    if (CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME' || CLOUDINARY_UPLOAD_PRESET === 'YOUR_UPLOAD_PRESET') {
-        alert('⚠️ Cloudinary nicht konfiguriert!\n\nBitte erstellen Sie ein KOSTENLOSES Cloudinary-Konto:\n1. Gehen Sie zu: https://cloudinary.com/users/register/free\n2. Ersetzen Sie CLOUDINARY_CLOUD_NAME und CLOUDINARY_UPLOAD_PRESET in app.js\n\n⚠️ Cloudinary not configured!\n\nPlease create a FREE Cloudinary account:\n1. Go to: https://cloudinary.com/users/register/free\n2. Replace CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in app.js');
-        return;
+    loadAlbums() {
+        // Simulate loading albums
+        this.albums = [
+            { id: 'default', name: 'Default Album', photoCount: this.photos.length }
+        ];
+        this.renderAlbums();
     }
 
-    uploadProgress.style.display = 'block';
-    progressList.innerHTML = '';
-
-    const fileArray = Array.from(files);
-    const uploadPromises = fileArray.map(file => uploadToCloudinary(file));
-
-    try {
-        const results = await Promise.all(uploadPromises);
+    renderPhotos() {
+        const photosGrid = document.getElementById('photosGrid');
         
-        // Add successful uploads to album
-        const successfulUploads = results.filter(r => r.success);
-        successfulUploads.forEach(result => {
-            albums[currentAlbum].photos.push({
-                url: result.url,
-                publicId: result.publicId,
-                name: result.name,
-                uploaded: new Date().toISOString()
-            });
+        if (this.photos.length === 0) {
+            photosGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📸</div>
+                    <h3>No photos yet</h3>
+                    <p>Upload your first photo to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        const photosHtml = this.photos.map(photo => `
+            <div class="photo-card" onclick="app.openPhoto('${photo.id}')">
+                <div class="photo-actions">
+                    <button class="btn-photo-delete" onclick="event.stopPropagation(); app.confirmDeletePhoto('${photo.id}')" title="Delete photo">×</button>
+                </div>
+                <img src="${photo.url}" alt="${photo.name}" loading="lazy">
+                <div class="photo-info">
+                    <h4>${photo.name}</h4>
+                    <p>${this.formatDate(photo.uploadDate)} • ${this.formatFileSize(photo.size)}</p>
+                </div>
+            </div>
+        `).join('');
+
+        photosGrid.innerHTML = photosHtml;
+    }
+
+    renderAlbums() {
+        const albumsGrid = document.getElementById('albumsGrid');
+        
+        const albumsHtml = this.albums.map(album => `
+            <div class="album-card" onclick="app.openAlbum('${album.id}')">
+                <div class="album-cover">📂</div>
+                <h3>${album.name}</h3>
+                <p>${album.photoCount} photos</p>
+                ${album.id !== 'default' ? `
+                    <div class="album-actions">
+                        <button class="btn-album-delete" onclick="event.stopPropagation(); app.confirmDeleteAlbum('${album.id}')" title="Delete album">Delete</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        albumsGrid.innerHTML = albumsHtml;
+    }
+
+    openPhoto(photoId) {
+        const photo = this.photos.find(p => p.id == photoId);
+        if (!photo) return;
+
+        this.currentPhotoId = photoId;
+        const modal = document.getElementById('photoModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDate = document.getElementById('modalDate');
+
+        modalImage.src = photo.url;
+        modalTitle.textContent = photo.name;
+        modalDate.textContent = `Uploaded ${this.formatDate(photo.uploadDate)}`;
+        
+        modal.style.display = 'flex';
+    }
+
+    openAlbum(albumId) {
+        this.showNotification(`Opening album: ${albumId}`, 'info');
+    }
+
+    createAlbum() {
+        const name = prompt('Enter album name:');
+        if (name) {
+            const album = {
+                id: Date.now(),
+                name: name,
+                photoCount: 0
+            };
+            this.albums.push(album);
+            this.renderAlbums();
+            this.showNotification(`Album "${name}" created!`, 'success');
+        }
+    }
+
+    updateUserInfo() {
+        const userInfo = document.getElementById('userInfo');
+        const username = sessionStorage.getItem('photoAlbumUser') || 'User';
+        userInfo.innerHTML = `
+            <span>👤 ${username}</span>
+            <span>•</span>
+            <span>📊 ${this.photos.length} photos</span>
+            <span>•</span>
+            <span>📁 ${this.albums.length} albums</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        `;
+    }
+
+    confirmDeletePhoto(photoId) {
+        this.showConfirmDialog(
+            'Delete Photo',
+            'Are you sure you want to delete this photo? This action cannot be undone.',
+            () => this.deletePhotoById(photoId)
+        );
+    }
+
+    confirmDeleteAlbum(albumId) {
+        const album = this.albums.find(a => a.id === albumId);
+        this.showConfirmDialog(
+            'Delete Album',
+            `Are you sure you want to delete "${album.name}"? All photos in this album will be moved to the default album.`,
+            () => this.deleteAlbumById(albumId)
+        );
+    }
+
+    deletePhotoById(photoId) {
+        this.photos = this.photos.filter(p => p.id != photoId);
+        this.renderPhotos();
+        this.updateUserInfo();
+        this.closeModal();
+        this.showNotification('Photo deleted successfully', 'success');
+    }
+
+    deleteAlbumById(albumId) {
+        this.albums = this.albums.filter(a => a.id !== albumId);
+        this.renderAlbums();
+        this.updateUserInfo();
+        this.showNotification('Album deleted successfully', 'success');
+    }
+
+    showConfirmDialog(title, message, onConfirm) {
+        const dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+        dialog.innerHTML = `
+            <div class="confirm-content">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="confirm-buttons">
+                    <button class="btn-confirm cancel" onclick="this.closest('.confirm-dialog').remove()">Cancel</button>
+                    <button class="btn-confirm danger" onclick="this.closest('.confirm-dialog').remove(); (${onConfirm.toString()})()">Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+    }
+
+    closeModal() {
+        document.getElementById('photoModal').style.display = 'none';
+        this.currentPhotoId = null;
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
+    }
 
-        saveAlbums();
-        selectAlbum(currentAlbum); // Refresh gallery
-        loadAlbums(); // Update album dropdown
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 
-        // Hide progress after 2 seconds
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span>${message}</span>
+            <button onclick="this.parentElement.remove()">×</button>
+        `;
+        
+        // Add styles
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
         setTimeout(() => {
-            uploadProgress.style.display = 'none';
-            fileInput.value = '';
-        }, 2000);
-
-    } catch (error) {
-        console.error('Upload error:', error);
-        alert('Fehler beim Hochladen / Upload error: ' + error.message);
-    }
-}
-
-// Upload single file to Cloudinary
-function uploadToCloudinary(file) {
-    return new Promise((resolve, reject) => {
-        // Create progress item
-        const progressItem = createProgressItem(file.name);
-        progressList.appendChild(progressItem);
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        formData.append('folder', 'photo-albums/' + albums[currentAlbum].name);
-
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                updateProgressItem(progressItem, percent, 'uploading');
+            if (notification.parentElement) {
+                notification.remove();
             }
-        });
-
-        xhr.addEventListener('load', () => {
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                updateProgressItem(progressItem, 100, 'success');
-                resolve({
-                    success: true,
-                    url: response.secure_url,
-                    publicId: response.public_id,
-                    name: file.name
-                });
-            } else {
-                updateProgressItem(progressItem, 0, 'error');
-                resolve({
-                    success: false,
-                    error: 'Upload failed'
-                });
-            }
-        });
-
-        xhr.addEventListener('error', () => {
-            updateProgressItem(progressItem, 0, 'error');
-            resolve({
-                success: false,
-                error: 'Network error'
-            });
-        });
-
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
-        xhr.send(formData);
-    });
-}
-
-// Create progress item UI
-function createProgressItem(fileName) {
-    const item = document.createElement('div');
-    item.className = 'progress-item';
-    item.innerHTML = `
-        <div class="progress-item-header">
-            <span class="progress-item-name">${fileName}</span>
-            <span class="progress-item-status uploading">0%</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-bar-fill" style="width: 0%"></div>
-        </div>
-    `;
-    return item;
-}
-
-// Update progress item
-function updateProgressItem(item, percent, status) {
-    const statusEl = item.querySelector('.progress-item-status');
-    const fillEl = item.querySelector('.progress-bar-fill');
-    
-    fillEl.style.width = percent + '%';
-    statusEl.className = 'progress-item-status ' + status;
-    
-    if (status === 'success') {
-        statusEl.textContent = '✓ Fertig / Done';
-    } else if (status === 'error') {
-        statusEl.textContent = '✗ Fehler / Error';
-    } else {
-        statusEl.textContent = percent + '%';
+        }, 5000);
     }
 }
 
-// Display photos in grid
-function displayPhotos(photos) {
-    photoGrid.innerHTML = '';
-    
-    if (photos.length === 0) {
-        photoGrid.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">📷</div>
-                <p>Noch keine Fotos / No photos yet</p>
-                <p><small>Laden Sie Fotos hoch, um zu beginnen / Upload photos to get started</small></p>
-            </div>
-        `;
-        return;
+// Global functions
+function closeModal() {
+    app.closeModal();
+}
+
+function createAlbum() {
+    app.createAlbum();
+}
+
+function openAlbum(albumId) {
+    app.openAlbum(albumId);
+}
+
+function deletePhoto() {
+    if (app.currentPhotoId) {
+        app.confirmDeletePhoto(app.currentPhotoId);
     }
-
-    photos.forEach((photo, index) => {
-        const item = document.createElement('div');
-        item.className = 'photo-item';
-        item.innerHTML = `
-            <img src="${photo.url}" alt="${photo.name}" loading="lazy">
-            <div class="photo-item-overlay">
-                <div>${photo.name}</div>
-                <div><small>${new Date(photo.uploaded).toLocaleDateString()}</small></div>
-            </div>
-        `;
-        
-        item.addEventListener('click', () => {
-            showLightbox(photo);
-        });
-        
-        photoGrid.appendChild(item);
-    });
 }
 
-// Show lightbox
-function showLightbox(photo) {
-    lightboxImg.src = photo.url;
-    lightboxCaption.textContent = photo.name;
-    lightbox.classList.add('show');
+function logout() {
+    sessionStorage.removeItem('photoAlbumAuth');
+    sessionStorage.removeItem('photoAlbumUser');
+    window.location.href = 'login.html';
 }
 
-// Save albums to localStorage
-function saveAlbums() {
-    localStorage.setItem('photoAlbums', JSON.stringify(albums));
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        lightbox.classList.remove('show');
-        newAlbumModal.classList.remove('show');
-    }
+// Initialize app
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new PhotoAlbumApp();
 });
+
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .notification button {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+`;
+document.head.appendChild(style);

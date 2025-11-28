@@ -1,112 +1,35 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Album - Login</title>
+    <title>Login - Photo Album</title>
     <script src="config.js"></script>
     <script src="config.local.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
         }
-
         .login-container {
             background: white;
-            padding: 50px 40px;
+            padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 400px;
             width: 100%;
-            animation: slideUp 0.5s ease-out;
         }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .photo-icon {
-            font-size: 80px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #667eea;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            color: #333;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 15px 12px 45px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s;
-            background: #f8f9fa;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 18px;
-        }
-
+        .login-icon { font-size: 60px; text-align: center; margin-bottom: 20px; }
+        h1 { color: #667eea; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; }
+        input:focus { outline: none; border-color: #667eea; }
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -117,152 +40,51 @@
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
             margin-top: 10px;
         }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-login:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-            border-left: 4px solid #c33;
-        }
-
-        .error-message.show {
-            display: block;
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .footer-text {
-            text-align: center;
-            margin-top: 20px;
-            color: #999;
-            font-size: 12px;
-        }
+        .btn-login:hover { transform: translateY(-2px); }
+        .error { background: #fee; color: #c33; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .error.show { display: block; }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="photo-icon">📸</div>
-        <h1>Photo Album</h1>
-        <p class="subtitle">Melden Sie sich an, um Fotos anzusehen<br><small>Log in to view photos</small></p>
-        
-        <div id="errorMessage" class="error-message"></div>
-        
+        <div class="login-icon">📸</div>
+        <h1>Photo Album Login</h1>
+        <div id="errorMessage" class="error"></div>
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Benutzername / Username</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">👤</span>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username" 
-                        required 
-                        autocomplete="username"
-                        placeholder="Benutzername eingeben"
-                    >
-                </div>
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
             </div>
-            
             <div class="form-group">
-                <label for="password">Passwort / Password</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">🔒</span>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        required 
-                        autocomplete="current-password"
-                        placeholder="Passwort eingeben"
-                    >
-                </div>
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
             </div>
-            
-            <button type="submit" class="btn-login" id="loginBtn">Anmelden / Login</button>
+            <button type="submit" class="btn-login">Login</button>
         </form>
-        
-        <p class="footer-text">
-            🔒 Sichere Verbindung über HTTPS<br>
-            Secure connection via HTTPS
-        </p>
     </div>
 
     <script>
-        // Check if already authenticated
         if (sessionStorage.getItem('photoAlbumAuth') === 'true') {
             window.location.href = 'index.html';
         }
 
-        const loginForm = document.getElementById('loginForm');
-        const errorMessage = document.getElementById('errorMessage');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        loginForm.addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
-            // Hide error message
-            errorMessage.classList.remove('show');
-            
-            // Disable button
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Wird überprüft... / Checking...';
-            
-            // Simple password check (NOT SECURE - client-side only!)
-            setTimeout(() => {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Anmelden / Login';
-                
-                // Debug: Check if config is loaded
-                console.log('CONFIG available:', typeof window.CONFIG !== 'undefined');
-                console.log('CONFIG values:', window.CONFIG);
-                console.log('Entered username:', username);
-                console.log('Expected username:', window.CONFIG?.USERNAME);
-                console.log('Match:', username === window.CONFIG?.USERNAME && password === window.CONFIG?.PASSWORD);
-                
-                // Check credentials from config
-                if (window.CONFIG && username === window.CONFIG.USERNAME && password === window.CONFIG.PASSWORD) {
-                    // Store authentication in session
-                    sessionStorage.setItem('photoAlbumAuth', 'true');
-                    sessionStorage.setItem('photoAlbumUser', username);
-                    
-                    // Redirect to photo album
-                    window.location.href = 'index.html';
-                } else {
-                    // Show error
-                    console.error('Login failed - credentials do not match');
-                    errorMessage.textContent = '❌ Ungültige Anmeldedaten / Invalid credentials';
-                    errorMessage.classList.add('show');
-                    
-                    // Clear password field
-                    document.getElementById('password').value = '';
-                    document.getElementById('password').focus();
-                }
-            }, 500);
+            const errorDiv = document.getElementById('errorMessage');
+
+            // Simple auth (extend with real authentication)
+            if (username === 'admin' && password === 'PhotoAlbum2024!') {
+                sessionStorage.setItem('photoAlbumAuth', 'true');
+                sessionStorage.setItem('photoAlbumUser', username);
+                window.location.href = 'index.html';
+            } else {
+                errorDiv.textContent = 'Invalid credentials';
+                errorDiv.classList.add('show');
+            }
         });
     </script>
 </body>
