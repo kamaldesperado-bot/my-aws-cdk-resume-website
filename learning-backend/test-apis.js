@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY';
-const YOUTUBE_API_KEY = 'AIzaSyDOHBHuzBFhEw6tbmL3IY1VQoL7g-Qp-Co';
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY';
 
 async function testGemini() {
   try {

@@ -47,8 +47,8 @@ export class LearningAppStack extends cdk.Stack {
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
         GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY',
-        YOUTUBE_API_KEY: 'AIzaSyDOHBHuzBFhEw6tbmL3IY1VQoL7g-Qp-Co',
-        JWT_SECRET: 'learning-app-secret-key-2024',
+        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY',
+        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -60,7 +60,7 @@ export class LearningAppStack extends cdk.Stack {
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
         USERS_TABLE: usersTable.tableName,
-        JWT_SECRET: 'learning-app-secret-key-2024',
+        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -72,7 +72,7 @@ export class LearningAppStack extends cdk.Stack {
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
         USERS_TABLE: usersTable.tableName,
-        JWT_SECRET: 'learning-app-secret-key-2024',
+        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
       },
       timeout: cdk.Duration.seconds(30),
     });
