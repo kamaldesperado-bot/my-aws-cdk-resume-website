@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,12 @@
     <script src="config.js"></script>
     <script src="config.local.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -16,20 +22,51 @@
             justify-content: center;
             align-items: center;
         }
+
         .login-container {
             background: white;
             padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 400px;
             width: 100%;
         }
-        .login-icon { font-size: 60px; text-align: center; margin-bottom: 20px; }
-        h1 { color: #667eea; text-align: center; margin-bottom: 30px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; }
-        input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; }
-        input:focus { outline: none; border-color: #667eea; }
+
+        .login-icon {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -42,11 +79,26 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        .btn-login:hover { transform: translateY(-2px); }
-        .error { background: #fee; color: #c33; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
-        .error.show { display: block; }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-icon">📸</div>
@@ -70,22 +122,44 @@
             window.location.href = 'index.html';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
 
-            // Simple auth (extend with real authentication)
-            if (username === 'admin' && password === 'PhotoAlbum2024!') {
-                sessionStorage.setItem('photoAlbumAuth', 'true');
-                sessionStorage.setItem('photoAlbumUser', username);
-                window.location.href = 'index.html';
-            } else {
-                errorDiv.textContent = 'Invalid credentials';
-                errorDiv.classList.add('show');
-            }
+            // TODO: Implement proper backend authentication
+            // This requires:
+            // 1. Backend API endpoint for authentication
+            // 2. Secure password storage (hashed)
+            // 3. JWT or session-based auth tokens
+            // 4. HTTPS-only transmission
+
+            errorDiv.textContent = 'Authentication system needs to be configured. Please set up backend authentication.';
+            errorDiv.classList.add('show');
+
+            // Example of proper implementation:
+            // try {
+            //     const response = await fetch('/api/auth/login', {
+            //         method: 'POST',
+            //         headers: { 'Content-Type': 'application/json' },
+            //         body: JSON.stringify({ username, password })
+            //     });
+            //     const data = await response.json();
+            //     if (data.token) {
+            //         sessionStorage.setItem('photoAlbumAuth', data.token);
+            //         sessionStorage.setItem('photoAlbumUser', username);
+            //         window.location.href = 'index.html';
+            //     } else {
+            //         errorDiv.textContent = 'Invalid credentials';
+            //         errorDiv.classList.add('show');
+            //     }
+            // } catch (error) {
+            //     errorDiv.textContent = 'Authentication error. Please try again.';
+            //     errorDiv.classList.add('show');
+            // }
         });
     </script>
 </body>
+
 </html>

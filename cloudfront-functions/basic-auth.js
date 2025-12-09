@@ -1,26 +1,31 @@
 function handler(event) {
     var request = event.request;
     var headers = request.headers;
-    
-    // Basic authentication check
-    // Credentials are base64 encoded in the authString below
-    var authString = 'Basic a2FtYWw6UmVzdW1lMjAyNCE=';
-    
-    // Check if Authorization header exists and matches
-    if (typeof headers.authorization === 'undefined' || 
-        headers.authorization.value !== authString) {
-        
-        // Return 401 with browser login prompt
-        return {
-            statusCode: 401,
-            statusDescription: 'Unauthorized',
-            headers: {
-                'www-authenticate': { value: 'Basic realm="Kamalakannan Sundaramurthy - Resume"' },
-                'cache-control': { value: 'no-cache, no-store, must-revalidate' }
-            }
-        };
-    }
-    
-    // Authentication successful
+
+    // TODO: Configure authentication credentials securely
+    // IMPORTANT: This function needs proper credentials to be configured.
+    // Options:
+    // 1. Use AWS Secrets Manager to store credentials
+    // 2. Use CloudFront signed URLs/cookies for access control
+    // 3. Use AWS Lambda@Edge for more complex auth logic
+    // 4. Integrate with AWS Cognito for user management
+
+    // For now, authentication is disabled - configure before deployment
+    // var authString = 'Basic ' + 'CONFIGURE_YOUR_BASE64_ENCODED_CREDENTIALS';
+
+    // Uncomment and configure the following once credentials are properly secured:
+    // if (typeof headers.authorization === 'undefined' || 
+    //     headers.authorization.value !== authString) {
+    //     return {
+    //         statusCode: 401,
+    //         statusDescription: 'Unauthorized',
+    //         headers: {
+    //             'www-authenticate': { value: 'Basic realm="Kamalakannan Sundaramurthy - Resume"' },
+    //             'cache-control': { value: 'no-cache, no-store, must-revalidate' }
+    //         }
+    //     };
+    // }
+
+    // WARNING: Authentication is currently disabled
     return request;
 }

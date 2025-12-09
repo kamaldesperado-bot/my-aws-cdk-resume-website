@@ -55,12 +55,12 @@ export class TravelBotStack extends cdk.Stack {
       code: lambda.Code.fromAsset('travel-bot-backend'),
       environment: {
         CONVERSATION_TABLE: conversationTable.tableName,
-        OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY || 'YOUR_OPENWEATHER_API_KEY',
-        GOOGLE_CREDENTIALS: process.env.GOOGLE_CREDENTIALS || 'YOUR_GOOGLE_SERVICE_ACCOUNT_JSON',
-        AZURE_TEXT_ANALYTICS_KEY: process.env.AZURE_TEXT_ANALYTICS_KEY || 'YOUR_AZURE_KEY',
-        AZURE_TEXT_ANALYTICS_ENDPOINT: process.env.AZURE_TEXT_ANALYTICS_ENDPOINT || 'YOUR_AZURE_ENDPOINT',
-        LEX_BOT_ID: process.env.LEX_BOT_ID || 'YOUR_LEX_BOT_ID',
-        LEX_BOT_ALIAS_ID: process.env.LEX_BOT_ALIAS_ID || 'TSTALIASID'
+        OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY || (() => { throw new Error('OPENWEATHER_API_KEY environment variable is required'); })(),
+        GOOGLE_CREDENTIALS: process.env.GOOGLE_CREDENTIALS || (() => { throw new Error('GOOGLE_CREDENTIALS environment variable is required'); })(),
+        AZURE_TEXT_ANALYTICS_KEY: process.env.AZURE_TEXT_ANALYTICS_KEY || (() => { throw new Error('AZURE_TEXT_ANALYTICS_KEY environment variable is required'); })(),
+        AZURE_TEXT_ANALYTICS_ENDPOINT: process.env.AZURE_TEXT_ANALYTICS_ENDPOINT || (() => { throw new Error('AZURE_TEXT_ANALYTICS_ENDPOINT environment variable is required'); })(),
+        LEX_BOT_ID: process.env.LEX_BOT_ID || (() => { throw new Error('LEX_BOT_ID environment variable is required'); })(),
+        LEX_BOT_ALIAS_ID: process.env.LEX_BOT_ALIAS_ID || (() => { throw new Error('LEX_BOT_ALIAS_ID environment variable is required'); })(),
       },
       timeout: cdk.Duration.seconds(30),
     });

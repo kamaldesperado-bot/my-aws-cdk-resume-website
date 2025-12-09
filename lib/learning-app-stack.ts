@@ -46,9 +46,9 @@ export class LearningAppStack extends cdk.Stack {
       handler: 'index.handler',
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
-        GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY',
-        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY',
-        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
+        GEMINI_API_KEY: process.env.GEMINI_API_KEY || (() => { throw new Error('GEMINI_API_KEY environment variable is required'); })(),
+        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY || (() => { throw new Error('YOUTUBE_API_KEY environment variable is required'); })(),
+        JWT_SECRET: process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET environment variable is required'); })(),
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -60,7 +60,7 @@ export class LearningAppStack extends cdk.Stack {
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
         USERS_TABLE: usersTable.tableName,
-        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
+        JWT_SECRET: process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET environment variable is required'); })(),
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -72,7 +72,7 @@ export class LearningAppStack extends cdk.Stack {
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
         USERS_TABLE: usersTable.tableName,
-        JWT_SECRET: process.env.JWT_SECRET || 'YOUR_JWT_SECRET',
+        JWT_SECRET: process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET environment variable is required'); })(),
       },
       timeout: cdk.Duration.seconds(30),
     });
