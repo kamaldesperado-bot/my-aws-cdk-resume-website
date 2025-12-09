@@ -49,7 +49,13 @@ export class PhotoAlbumStack extends cdk.Stack {
     const photosBucket = new s3.Bucket(this, 'PhotosBucket', {
       bucketName: `photos-v2-${this.account}-${this.region}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      blockPublicAccess: new s3.BlockPublicAccess({ 
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false
+      }),
+      publicReadAccess: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       autoDeleteObjects: false,
       versioned: true,
@@ -82,6 +88,15 @@ export class PhotoAlbumStack extends cdk.Stack {
       autoDeleteObjects: false,
       versioned: true
     });
+
+    // Allow public listing of bucket contents
+    photosBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:ListBucket'],
+        resources: [photosBucket.bucketArn],
+        principals: [new iam.AnyPrincipal()]
+      })
+    );
 
     // Allow CORS for photo uploads
     photosBucket.addCorsRule({
@@ -155,31 +170,36 @@ exports.handler = async (event) => {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
-const { v4: uuidv4 } = require('uuid');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const s3Client = new S3Client();
 
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': '*'
   };
   
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers };
+    return { statusCode: 200, headers, body: '' };
   }
   
   try {
-    const { filename, contentType } = JSON.parse(event.body);
-    const key = \`uploads/\${uuidv4()}-\${filename}\`;
+    const body = JSON.parse(event.body || '{}');
+    const filename = body.filename || 'photo.jpg';
+    const contentType = body.contentType || 'image/jpeg';
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const key = \`uploads/\${timestamp}-\${random}-\${filename}\`;
     
-    const signedUrl = s3.getSignedUrl('putObject', {
+    const command = new PutObjectCommand({
       Bucket: '${photosBucket.bucketName}',
       Key: key,
-      ContentType: contentType,
-      Expires: 300
+      ContentType: contentType
     });
+    
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
     
     return {
       statusCode: 200,
@@ -207,12 +227,74 @@ exports.handler = async (event) => {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'Authorization']
+        allowHeaders: apigateway.Cors.DEFAULT_HEADERS
       }
     });
 
     const upload = api.root.addResource('upload');
     upload.addMethod('POST', new apigateway.LambdaIntegration(uploadFunction));
+
+    // Album management Lambda
+    const albumFunction = new lambda.Function(this, 'AlbumManagementV2', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromInline(`
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const s3Client = new S3Client();
+const BUCKET = '${photosBucket.bucketName}';
+const KEY = 'albums/albums.json';
+
+exports.handler = async (event) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': '*'
+  };
+  
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+  
+  try {
+    if (event.httpMethod === 'GET') {
+      try {
+        const data = await s3Client.send(new GetObjectCommand({ Bucket: BUCKET, Key: KEY }));
+        const body = await data.Body.transformToString();
+        return { statusCode: 200, headers, body };
+      } catch (err) {
+        if (err.name === 'NoSuchKey') {
+          return { statusCode: 200, headers, body: JSON.stringify({ albums: [] }) };
+        }
+        throw err;
+      }
+    }
+    
+    if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
+      const body = JSON.parse(event.body || '{}');
+      await s3Client.send(new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: KEY,
+        Body: JSON.stringify(body),
+        ContentType: 'application/json'
+      }));
+      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+    }
+    
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  } catch (error) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+  }
+};
+      `),
+      timeout: cdk.Duration.seconds(30)
+    });
+
+    photosBucket.grantReadWrite(albumFunction);
+
+    const albums = api.root.addResource('albums');
+    albums.addMethod('GET', new apigateway.LambdaIntegration(albumFunction));
+    albums.addMethod('POST', new apigateway.LambdaIntegration(albumFunction));
+    albums.addMethod('PUT', new apigateway.LambdaIntegration(albumFunction));
 
     // Create Origin Access Identity for CloudFront
     const websiteOAI = new cloudfront.OriginAccessIdentity(this, 'WebsiteOAI', {
@@ -240,6 +322,14 @@ exports.handler = async (event) => {
       })
     );
 
+    photosBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: [photosBucket.arnForObjects('*')],
+        principals: [new iam.CanonicalUserPrincipal(photosOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId)]
+      })
+    );
+
     // Create CloudFront distribution with multiple origins
     const distribution = new cloudfront.Distribution(this, 'PhotoAlbumDistribution', {
       defaultBehavior: {
@@ -258,6 +348,29 @@ exports.handler = async (event) => {
           cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
           compress: true,
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED
+        },
+        '/photos/*': {
+          origin: S3BucketOrigin.withOriginAccessIdentity(photosBucket, { 
+            originAccessIdentity: photosOAI,
+            originPath: ''
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+          cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+          compress: true,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          functionAssociations: [{
+            function: new cloudfront.Function(this, 'PhotosRewriteFunction', {
+              code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+  var request = event.request;
+  request.uri = request.uri.replace(/^\/photos\//, '/');
+  return request;
+}
+              `)
+            }),
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST
+          }]
         }
       },
       defaultRootObject: 'index.html',
@@ -277,7 +390,7 @@ exports.handler = async (event) => {
       ],
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       enabled: true,
-      comment: 'CloudFront distribution for photo album with image processing'
+      comment: 'CloudFront distribution for photo album with image processing v2'
     });
 
     // Deploy photo album website content to S3

@@ -12,10 +12,9 @@ class PhotoAlbumApp {
     }
 
     checkAuth() {
-        if (sessionStorage.getItem('photoAlbumAuth') !== 'true') {
-            window.location.href = 'login.html';
-            return;
-        }
+        // Auth disabled for now
+        sessionStorage.setItem('photoAlbumAuth', 'true');
+        sessionStorage.setItem('photoAlbumUser', 'User');
     }
 
     init() {
@@ -111,7 +110,7 @@ class PhotoAlbumApp {
                 id: Date.now() + Math.random(),
                 name: file.name,
                 key: key,
-                url: `https://d3li9uvhi7686q.cloudfront.net/images/${key}`,
+                url: `https://photos-v2-128945984791-eu-central-1.s3.eu-central-1.amazonaws.com/${key}`,
                 uploadDate: new Date().toISOString(),
                 size: file.size
             };
@@ -154,32 +153,39 @@ class PhotoAlbumApp {
     }
 
     loadPhotos() {
-        // Simulate loading photos (in real app, fetch from API/DynamoDB)
-        this.photos = [
-            {
-                id: 1,
-                name: 'Sample Photo 1',
-                url: 'https://picsum.photos/400/300?random=1',
-                uploadDate: new Date().toISOString(),
-                size: 1024000
-            },
-            {
-                id: 2,
-                name: 'Sample Photo 2',
-                url: 'https://picsum.photos/400/300?random=2',
-                uploadDate: new Date().toISOString(),
-                size: 2048000
-            }
-        ];
+        this.photos = [];
         this.renderPhotos();
     }
 
-    loadAlbums() {
-        // Simulate loading albums
-        this.albums = [
-            { id: 'default', name: 'Default Album', photoCount: this.photos.length }
-        ];
+    async loadAlbums() {
+        try {
+            const response = await fetch(`${this.apiUrl}/albums`);
+            const data = await response.json();
+            this.albums = data.albums || [];
+        } catch (error) {
+            console.error('Failed to load albums:', error);
+            this.albums = [];
+        }
         this.renderAlbums();
+    }
+
+    async saveAlbum(albumName) {
+        try {
+            const blob = new Blob([''], { type: 'text/plain' });
+            const response = await fetch(`${this.apiUrl}/upload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: `albums/${albumName}/.keep`, contentType: 'text/plain' })
+            });
+            const { uploadUrl } = await response.json();
+            await fetch(uploadUrl, {
+                method: 'PUT',
+                body: blob,
+                headers: { 'Content-Type': 'text/plain' }
+            });
+        } catch (error) {
+            console.error('Failed to save album:', error);
+        }
     }
 
     renderPhotos() {
@@ -215,16 +221,25 @@ class PhotoAlbumApp {
     renderAlbums() {
         const albumsGrid = document.getElementById('albumsGrid');
         
+        if (this.albums.length === 0) {
+            albumsGrid.innerHTML = `
+                <div class="album-card" onclick="app.openAlbum('default')">
+                    <div class="album-cover">📂</div>
+                    <h3>Default Album</h3>
+                    <p>0 photos</p>
+                </div>
+            `;
+            return;
+        }
+        
         const albumsHtml = this.albums.map(album => `
             <div class="album-card" onclick="app.openAlbum('${album.id}')">
                 <div class="album-cover">📂</div>
                 <h3>${album.name}</h3>
-                <p>${album.photoCount} photos</p>
-                ${album.id !== 'default' ? `
-                    <div class="album-actions">
-                        <button class="btn-album-delete" onclick="event.stopPropagation(); app.confirmDeleteAlbum('${album.id}')" title="Delete album">Delete</button>
-                    </div>
-                ` : ''}
+                <p>${(album.photos || []).length} photos</p>
+                <div class="album-actions">
+                    <button class="btn-album-delete" onclick="event.stopPropagation(); app.confirmDeleteAlbum('${album.id}')" title="Delete album">Delete</button>
+                </div>
             </div>
         `).join('');
 
@@ -252,15 +267,16 @@ class PhotoAlbumApp {
         this.showNotification(`Opening album: ${albumId}`, 'info');
     }
 
-    createAlbum() {
+    async createAlbum() {
         const name = prompt('Enter album name:');
         if (name) {
-            const album = {
-                id: Date.now(),
-                name: name,
-                photoCount: 0
-            };
+            const album = { id: Date.now().toString(), name, photos: [], created: new Date().toISOString() };
             this.albums.push(album);
+            await fetch(`${this.apiUrl}/albums`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ albums: this.albums })
+            });
             this.renderAlbums();
             this.showNotification(`Album "${name}" created!`, 'success');
         }
@@ -304,11 +320,11 @@ class PhotoAlbumApp {
         this.showNotification('Photo deleted successfully', 'success');
     }
 
-    deleteAlbumById(albumId) {
+    async deleteAlbumById(albumId) {
         this.albums = this.albums.filter(a => a.id !== albumId);
         this.renderAlbums();
         this.updateUserInfo();
-        this.showNotification('Album deleted successfully', 'success');
+        this.showNotification('Album deleted (folder remains in S3)', 'success');
     }
 
     showConfirmDialog(title, message, onConfirm) {
@@ -388,19 +404,19 @@ class PhotoAlbumApp {
 
 // Global functions
 function closeModal() {
-    app.closeModal();
+    if (window.app) app.closeModal();
 }
 
 function createAlbum() {
-    app.createAlbum();
+    if (window.app) app.createAlbum();
 }
 
 function openAlbum(albumId) {
-    app.openAlbum(albumId);
+    if (window.app) app.openAlbum(albumId);
 }
 
 function deletePhoto() {
-    if (app.currentPhotoId) {
+    if (window.app && app.currentPhotoId) {
         app.confirmDeletePhoto(app.currentPhotoId);
     }
 }
@@ -412,9 +428,9 @@ function logout() {
 }
 
 // Initialize app
-let app;
+window.app = null;
 document.addEventListener('DOMContentLoaded', () => {
-    app = new PhotoAlbumApp();
+    window.app = new PhotoAlbumApp();
 });
 
 // Add CSS animation

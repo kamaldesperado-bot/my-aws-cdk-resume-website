@@ -46,7 +46,7 @@ export class LearningAppStack extends cdk.Stack {
       handler: 'index.handler',
       code: lambda.Code.fromAsset('learning-backend'),
       environment: {
-        GEMINI_API_KEY: 'AIzaSyD7iLwiFTKLT--Gx4jW6a219YJ-fH88KWg',
+        GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY',
         YOUTUBE_API_KEY: 'AIzaSyDOHBHuzBFhEw6tbmL3IY1VQoL7g-Qp-Co',
         JWT_SECRET: 'learning-app-secret-key-2024',
       },

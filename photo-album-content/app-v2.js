@@ -68,13 +68,14 @@ function loadFromLocalStorage() {
 // Sync from cloud (S3 or DynamoDB)
 async function syncFromCloud() {
     try {
-        // Try to load from a public S3 URL
-        // This would require the albums.json file to be public or use signed URLs
-        // For now, we'll use localStorage and add a "Sync" button for manual sync
-        
-        console.log('ℹ️ Cloud sync not yet configured - using local storage');
-        console.log('💡 Albums are stored locally on this device');
-        
+        const response = await fetch(window.CONFIG.ALBUMS_API);
+        if (response.ok) {
+            const data = await response.json();
+            albums = data.albums || [];
+            localStorage.setItem('photoAlbums', JSON.stringify(albums));
+            renderAlbumList();
+            console.log(`✅ Synced ${albums.length} albums from cloud`);
+        }
     } catch (error) {
         console.error('Sync error:', error);
     }
@@ -83,13 +84,13 @@ async function syncFromCloud() {
 // Save to cloud
 async function saveToCloud() {
     try {
-        // Save to localStorage immediately
         localStorage.setItem('photoAlbums', JSON.stringify(albums));
-        console.log('✅ Saved to local storage');
-        
-        // TODO: Implement cloud sync when needed
-        // For now, localStorage works fine for single-user scenarios
-        
+        await fetch(window.CONFIG.ALBUMS_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ albums })
+        });
+        console.log('✅ Saved to cloud');
     } catch (error) {
         console.error('Save error:', error);
     }
